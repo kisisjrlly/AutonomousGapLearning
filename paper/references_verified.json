@@ -1,0 +1,234 @@
+{
+ "verified": [
+  {
+   "key": "1",
+   "status": "confirmed",
+   "bibtex_like": "Hwangbo J, Lee J, Dosovitskiy A, Bellicoso D, Tsounis V, Koltun V, Hutter M. Learning agile and dynamic motor skills for legged robots. Science Robotics 4(26):eaau5872, 2019. DOI: 10.1126/scirobotics.aau5872",
+   "note": "Confirmed via Science Robotics/PubMed/KAIST records; authors, title, venue, and year all match."
+  },
+  {
+   "key": "2",
+   "status": "confirmed",
+   "bibtex_like": "Lee J, Hwangbo J, Wellhausen L, Koltun V, Hutter M. Learning quadrupedal locomotion over challenging terrain. Science Robotics 5(47):eabc5986, 2020. DOI: 10.1126/scirobotics.abc5986",
+   "note": "Confirmed via Science Robotics/PubMed/KAIST records; authors, title, venue, and year all match."
+  },
+  {
+   "key": "3",
+   "status": "confirmed",
+   "bibtex_like": "Miki T, Lee J, Hwangbo J, Wellhausen L, Koltun V, Hutter M. Learning robust perceptive locomotion for quadrupedal robots in the wild. Science Robotics 7(62):eabk2822, 2022. DOI: 10.1126/scirobotics.abk2822",
+   "note": "Confirmed via science.org and KAIST records; authors, title, venue, and year all match."
+  },
+  {
+   "key": "4",
+   "status": "confirmed",
+   "bibtex_like": "Choi S, Ji G, Park J, Kim H, Mun J, Lee JH, Hwangbo J. Learning quadrupedal locomotion on deformable terrain. Science Robotics 8(74):eade2256, 2023. DOI: 10.1126/scirobotics.ade2256",
+   "note": "Confirmed via science.org and KAIST records; candidate's 'Choi, Ji et al.' expanded to the full 7-author list (Suyoung Choi, Gwanghyeon Ji, Jeongsoo Park, Hyeongjun Kim, Juhyeok Mun, Jeong Hyun Lee, Jemin Hwangbo)."
+  },
+  {
+   "key": "kaufmann2023champion",
+   "status": "confirmed",
+   "bibtex_like": "Kaufmann, E., Bauersfeld, L., Loquercio, A., Müller, M., Koltun, V., Scaramuzza, D. Champion-level drone racing using deep reinforcement learning. Nature 620, 982-987, 2023. DOI: 10.1038/s41586-023-06419-4",
+   "note": "Exact match; system named Swift. Mueller = Matthias Müller."
+  },
+  {
+   "key": "loquercio2021learning",
+   "status": "confirmed",
+   "bibtex_like": "Loquercio, A., Kaufmann, E., Ranftl, R., Müller, M., Koltun, V., Scaramuzza, D. Learning high-speed flight in the wild. Science Robotics 6(59), eabg5810, 2021. DOI: 10.1126/scirobotics.abg5810 (arXiv:2110.05113)",
+   "note": "Exact match; all six authors confirmed."
+  },
+  {
+   "key": "song2023reaching",
+   "status": "confirmed",
+   "bibtex_like": "Song, Y., Romero, A., Müller, M., Koltun, V., Scaramuzza, D. Reaching the limit in autonomous racing: Optimal control versus reinforcement learning. Science Robotics 8(82), eadg1462, 2023. DOI: 10.1126/scirobotics.adg1462 (arXiv:2310.10943)",
+   "note": "Exact match; venue and year confirmed."
+  },
+  {
+   "key": "oconnell2022neuralfly",
+   "status": "confirmed",
+   "bibtex_like": "O'Connell, M., Shi, G., Shi, X., Azizzadenesheli, K., Anandkumar, A., Yue, Y., Chung, S.-J. Neural-Fly enables rapid learning for agile flight in strong winds. Science Robotics 7(66), eabm6597, 2022. DOI: 10.1126/scirobotics.abm6597 (arXiv:2205.06908)",
+   "note": "Exact match; author list confirmed (O'Connell with apostrophe)."
+  },
+  {
+   "key": "zhou2022swarm",
+   "status": "confirmed",
+   "bibtex_like": "Zhou, X., Wen, X., Wang, Z., Gao, Y., Li, H., Wang, Q., Yang, T., Lu, H., Cao, Y., Xu, C., Gao, F. Swarm of micro flying robots in the wild. Science Robotics 7(66), eabm5954, 2022. DOI: 10.1126/scirobotics.abm5954",
+   "note": "Exact match; 'et al.' expanded to full author list (Zhejiang University group)."
+  },
+  {
+   "key": "falanga2017gaps",
+   "status": "confirmed",
+   "bibtex_like": "D. Falanga, E. Mueggler, M. Faessler, D. Scaramuzza. Aggressive Quadrotor Flight Through Narrow Gaps With Onboard Sensing and Computing Using Active Vision. IEEE International Conference on Robotics and Automation (ICRA) 2017, pp. 5774-5781. DOI: 10.1109/ICRA.2017.7989679. arXiv:1612.00291.",
+   "note": "Authors, title, venue, and year all verified against IEEE Xplore/Semantic Scholar/Google Scholar records."
+  },
+  {
+   "key": "loianno2017estimation",
+   "status": "confirmed",
+   "bibtex_like": "G. Loianno, C. Brunner, G. McGrath, V. Kumar. Estimation, Control, and Planning for Aggressive Flight With a Small Quadrotor With a Single Camera and IMU. IEEE Robotics and Automation Letters, vol. 2, no. 2, pp. 404-411, 2017. DOI: 10.1109/LRA.2016.2633290.",
+   "note": "Confirmed as RA-L 2017 (vol. 2, no. 2); also presented at ICRA 2017."
+  },
+  {
+   "key": "mellinger2011minsnap",
+   "status": "confirmed",
+   "bibtex_like": "D. Mellinger, V. Kumar. Minimum Snap Trajectory Generation and Control for Quadrotors. IEEE International Conference on Robotics and Automation (ICRA) 2011, pp. 2520-2525. DOI: 10.1109/ICRA.2011.5980409.",
+   "note": "Confirmed; ICRA 2011, Shanghai, May 2011."
+  },
+  {
+   "key": "zhang2025diffphys",
+   "status": "confirmed",
+   "bibtex_like": "Y. Zhang, Y. Hu, Y. Song, D. Zou, W. Lin. Learning Vision-Based Agile Flight via Differentiable Physics. Nature Machine Intelligence 2025. DOI: 10.1038/s42256-025-01048-0. arXiv:2407.10648.",
+   "note": "Venue and year confirmed: Nature Machine Intelligence, 2025. Authors Yuang Zhang, Yu Hu, Yunlong Song, Danping Zou, Weiyao Lin match. The earlier arXiv preprint (2407.10648) carried the longer title 'Back to Newton's Laws: Learning Vision-based Agile Flight via Differentiable Physics'; the published journal title is as cited."
+  },
+  {
+   "key": "brunke2022safe",
+   "status": "confirmed",
+   "bibtex_like": "Lukas Brunke, Melissa Greeff, Adam W. Hall, Zhaocong Yuan, Siqi Zhou, Jacopo Panerati, Angela P. Schoellig. Safe Learning in Robotics: From Learning-Based Control to Safe Reinforcement Learning. Annual Review of Control, Robotics, and Autonomous Systems, Vol. 5, pp. 411-444, 2022. DOI: 10.1146/annurev-control-042920-020211 (arXiv:2108.06266).",
+   "note": "All details match: authors, title, venue, and year confirmed."
+  },
+  {
+   "key": "hsu2024safetyfilter",
+   "status": "corrected",
+   "bibtex_like": "Kai-Chieh Hsu, Haimin Hu, Jaime F. Fisac. The Safety Filter: A Unified View of Safety-Critical Control in Autonomous Systems. Annual Review of Control, Robotics, and Autonomous Systems, Vol. 7, pp. 47-72, 2024. DOI: 10.1146/annurev-control-071723-102940.",
+   "note": "Year corrected: published 2024 (Volume 7), not 2023. Authors, title, and venue confirmed."
+  },
+  {
+   "key": "eysenbach2018leavenotrace",
+   "status": "confirmed",
+   "bibtex_like": "Benjamin Eysenbach, Shixiang Gu, Julian Ibarz, Sergey Levine. Leave no Trace: Learning to Reset for Safe and Autonomous Reinforcement Learning. ICLR 2018. arXiv:1711.06782.",
+   "note": "Confirmed at ICLR 2018 (Conference Track). Shane Gu's formal name is Shixiang Gu."
+  },
+  {
+   "key": "schulman2017ppo",
+   "status": "confirmed",
+   "bibtex_like": "John Schulman, Filip Wolski, Prafulla Dhariwal, Alec Radford, Oleg Klimov. Proximal Policy Optimization Algorithms. arXiv preprint, 2017. arXiv:1707.06347.",
+   "note": "Confirmed as an arXiv preprint (never formally published in a peer-reviewed venue)."
+  },
+  {
+   "key": "tobin2017domainrandomization",
+   "status": "confirmed",
+   "bibtex_like": "Josh Tobin, Rachel Fong, Alex Ray, Jonas Schneider, Wojciech Zaremba, Pieter Abbeel. Domain Randomization for Transferring Deep Neural Networks from Simulation to the Real World. IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) 2017, pp. 23-30. DOI: 10.1109/IROS.2017.8202133 (arXiv:1703.06907).",
+   "note": "Confirmed at IROS 2017, Vancouver, September 24-28, 2017."
+  },
+  {
+   "key": "zhao2023act",
+   "status": "confirmed",
+   "bibtex_like": "Tony Z. Zhao, Vikash Kumar, Sergey Levine, Chelsea Finn. Learning Fine-Grained Bimanual Manipulation with Low-Cost Hardware. Robotics: Science and Systems (RSS) 2023. arXiv:2304.13705.",
+   "note": "Confirmed at RSS 2023. Introduces the ALOHA system and Action Chunking with Transformers (ACT)."
+  },
+  {
+   "key": "1",
+   "status": "confirmed",
+   "bibtex_like": "Yan Duan, John Schulman, Xi Chen, Peter L. Bartlett, Ilya Sutskever, Pieter Abbeel. RL^2: Fast Reinforcement Learning via Slow Reinforcement Learning. arXiv preprint 2016. arXiv:1611.02779.",
+   "note": "Candidate citation is accurate; arXiv-only (never published at a peer-reviewed venue)."
+  },
+  {
+   "key": "2",
+   "status": "confirmed",
+   "bibtex_like": "Jane X. Wang, Zeb Kurth-Nelson, Dhruva Tirumala, Hubert Soyer, Joel Z. Leibo, Remi Munos, Charles Blundell, Dharshan Kumaran, Matthew Botvinick. Learning to reinforcement learn. arXiv 2016 / Proceedings of CogSci 2017. arXiv:1611.05763.",
+   "note": "Both venues correct: arXiv:1611.05763 (Nov 2016) and CogSci 2017, where it won the Computational Modeling Prize in Applied Cognition. Full author list confirmed (9 authors)."
+  },
+  {
+   "key": "3",
+   "status": "confirmed",
+   "bibtex_like": "Tianwei Ni, Benjamin Eysenbach, Ruslan Salakhutdinov. Recurrent Model-Free RL Can Be a Strong Baseline for Many POMDPs. ICML 2022, PMLR 162:16691-16723. arXiv:2110.05038.",
+   "note": "Candidate citation accurate; PMLR page proceedings.mlr.press/v162/ni22a.html."
+  },
+  {
+   "key": "4",
+   "status": "confirmed",
+   "bibtex_like": "Michael Laskin, Luyu Wang, Junhyuk Oh, Emilio Parisotto, Stephen Spencer, Richie Steigerwald, DJ Strouse, Steven Hansen, Angelos Filos, Ethan Brooks, Maxime Gazeau, Himanshu Sahni, Satinder Singh, Volodymyr Mnih. In-context Reinforcement Learning with Algorithm Distillation. ICLR 2023 (oral). arXiv:2210.14215.",
+   "note": "Confirmed as ICLR 2023 oral (OpenReview id hy0a5MMPUv); full 14-author list verified."
+  },
+  {
+   "key": "5",
+   "status": "confirmed",
+   "bibtex_like": "Ashish Kumar, Zipeng Fu, Deepak Pathak, Jitendra Malik. RMA: Rapid Motor Adaptation for Legged Robots. Robotics: Science and Systems (RSS) 2021. DOI: 10.15607/RSS.2021.XVII.011. arXiv:2107.04034.",
+   "note": "Candidate citation accurate; DOI confirmed via dblp/RSS proceedings."
+  },
+  {
+   "key": "6",
+   "status": "corrected",
+   "bibtex_like": "Jacob Beck, Risto Vuorio, Evan Zheran Liu, Zheng Xiong, Luisa Zintgraf, Chelsea Finn, Shimon Whiteson. A Tutorial on Meta-Reinforcement Learning. Foundations and Trends in Machine Learning 18(2-3):224-384, 2025. DOI: 10.1561/2200000080. arXiv:2301.08028.",
+   "note": "Candidate is valid for the 2023 arXiv versions (v1-v3 titled 'A Survey of Meta-Reinforcement Learning', arXiv:2301.08028). The work was retitled 'A Tutorial on Meta-Reinforcement Learning' in v4 (May 2025) and published as the journal version in Foundations and Trends in Machine Learning (Now Publishers, article MAL-080). Cite the journal version with the new title, or the arXiv 2023 version with the old title -- do not mix them."
+  },
+  {
+   "key": "7",
+   "status": "confirmed",
+   "bibtex_like": "Adaptive Agent Team (Jakob Bauer, Kate Baumli, Satinder Baveja, Feryal Behbahani, Avishkar Bhoopchand, Nathalie Bradley-Schmieg, Michael Chang, Natalie Clay, Adrian Collister, Vibhavari Dasagi, Lucy Gonzalez, Karol Gregor, Edward Hughes, Sheleem Kashem, Maria Loks-Thompson, Hannah Openshaw, Jack Parker-Holder, Shreya Pathak, Nicolas Perez-Nieves, Nemanja Rakicevic, Tim Rocktaschel, Yannick Schroecker, Jakub Sygnowski, Karl Tuyls, Sarah York, Alexander Zacherl, Lei M. Zhang). Human-Timescale Adaptation in an Open-Ended Task Space. ICML 2023 (oral), PMLR 202:1887-1935. arXiv:2301.07608.",
+   "note": "Venue confirmed: ICML 2023 oral, PMLR v202 (bauer23a), pp. 1887-1935. Author style: arXiv bylines it as 'Adaptive Agent Team' with the individual authors listed alphabetically (first listed: Jakob Bauer); PMLR/ACM index it as Bauer et al., so cite either 'Adaptive Agent Team' or 'Bauer, J., et al.'. Note Satinder Baveja = Satinder Singh (PMLR lists him as Satinder Singh)."
+  }
+ ],
+ "discovered": [
+  {
+   "citation": "Du, M., Khazatsky, A., Gerstenberg, T., & Finn, C. (2024). To Err is Robotic: Rapid Value-Based Trial-and-Error during Deployment. arXiv:2406.15917. https://arxiv.org/abs/2406.15917",
+   "relevance": "The most direct match for retry-with-adjusted-strategy: Bellman-Guided Retrials monitors a base policy's progress with a learned value function, detects when the current attempt is failing, aborts before an unrecoverable mistake, recovers, and resamples a new strategy explicitly skewed away from behaviors that recently failed in the episode. Improves base-policy success rates by over 20% in simulation and 50% on real-robot experiments, demonstrating episodic self-correction during deployment without retraining."
+  },
+  {
+   "citation": "Liu, Z., Bahety, A., & Song, S. (2023). REFLECT: Summarizing Robot Experiences for Failure Explanation and Correction. Conference on Robot Learning (CoRL) 2023. arXiv:2306.15724. https://arxiv.org/abs/2306.15724",
+   "relevance": "Canonical episodic self-correction work: converts the robot's own multisensory execution history into a hierarchical experience summary, queries an LLM to progressively diagnose why the attempt failed, and feeds the failure explanation to a language-based planner that generates a correction plan for the retry. Introduces the RoboFail benchmark of failure scenarios and validates correction planning in simulation and on a real robot arm."
+  },
+  {
+   "citation": "Huang, W., Xia, F., Xiao, T., Chan, H., Liang, J., Florence, P., Zeng, A., Tompson, J., Mordatch, I., Chebotar, Y., Sermanet, P., Brown, N., Jackson, T., Luu, L., Levine, S., Hausman, K., & Ichter, B. (2022). Inner Monologue: Embodied Reasoning through Planning with Language Models. Conference on Robot Learning (CoRL) 2022. arXiv:2207.05608. https://arxiv.org/abs/2207.05608",
+   "relevance": "Foundational 2022 demonstration of in-context adaptation on real robots: closes the planning loop by injecting success detection, scene descriptions, and other environment feedback into the LLM prompt, so when a skill fails the planner observes the failure and retries or replans in-context, without any additional training. Validated on real tabletop rearrangement and kitchen mobile-manipulation robots, establishing the feedback-driven retry paradigm that later self-correction work builds on."
+  },
+  {
+   "citation": "Dai, Y., Lee, J., Fazeli, N., & Chai, J. (2024). RACER: Rich Language-Guided Failure Recovery Policies for Imitation Learning. ICRA 2025. arXiv:2409.14674. https://arxiv.org/abs/2409.14674",
+   "relevance": "Trains failure recovery directly into the policy: a scalable pipeline augments expert demonstrations with failure-and-recovery trajectories annotated with fine-grained language, and a VLM supervisor provides online corrective language guidance to a language-conditioned visuomotor actor when execution goes wrong. Outperforms RVT on RLBench long-horizon, goal-change, and zero-shot tasks and transfers to real-world robot evaluation, showing learned (rather than scripted) retry/recovery behavior."
+  },
+  {
+   "citation": "Bousmalis, K., Vezzani, G., Rao, D., et al. (Google DeepMind) (2023). RoboCat: A Self-Improving Generalist Agent for Robotic Manipulation. Transactions on Machine Learning Research (TMLR). arXiv:2306.11706. https://arxiv.org/abs/2306.11706",
+   "relevance": "Demonstrates the self-improvement loop at scale on real robot arms: a multi-embodiment goal-conditioned decision transformer practices new tasks autonomously, and its self-generated trajectories (its own attempts, successful and otherwise) are folded back into training for the next iteration, improving performance across tasks with only 100-1000 human examples per new task. Relevant as the strongest evidence that robots can improve from their own attempt data across episodes, complementing within-episode retry methods."
+  },
+  {
+   "citation": "Guo, Y., Wang, Y.-J., Zha, L., Jiang, Z., & Chen, J. (2023). DoReMi: Grounding Language Model by Detecting and Recovering from Plan-Execution Misalignment. IROS/ICRA (IEEE) 2024. arXiv:2307.00329. https://arxiv.org/abs/2307.00329",
+   "relevance": "Addresses aborted/deviating attempts at the plan-execution interface: the LLM generates both the plan and executability constraints, a VLM continuously checks those constraints during low-level execution, and any detected violation immediately triggers LLM re-planning to recover and re-attempt the step. Evaluated on robot-arm manipulation and humanoid tasks with higher success rates and shorter execution times, exemplifying immediate detection-and-recovery rather than open-loop replay."
+  },
+  {
+   "citation": "B. Thananjeyan, A. Balakrishna, S. Nair, M. Luo, K. Srinivasan, M. Hwang, J. E. Gonzalez, J. Ibarz, C. Finn, and K. Goldberg, \"Recovery RL: Safe Reinforcement Learning with Learned Recovery Zones,\" IEEE Robotics and Automation Letters, vol. 6, no. 3, pp. 4915-4922, 2021. arXiv:2010.15920. https://arxiv.org/abs/2010.15920",
+   "relevance": "The canonical safe-RL recovery-policy paper: it splits control between a task policy and a dedicated recovery policy that takes over when a learned constraint-violation critic (trained on offline data) predicts the agent is entering an unsafe zone. This is the archetype of an 'active abort' mechanism in safe RL — a learned monitor triggering a learned safe-termination/recovery behavior — validated in simulation and on a physical robot obstacle-avoidance task."
+  },
+  {
+   "citation": "K.-C. Hsu, A. Z. Ren, D. P. Nguyen, A. Majumdar, and J. F. Fisac, \"Sim-to-Lab-to-Real: Safe Reinforcement Learning with Shielding and Generalization Guarantees,\" Artificial Intelligence, vol. 314, 103811, 2023. arXiv:2201.08355. https://arxiv.org/abs/2201.08355",
+   "relevance": "Dual-policy safe RL in which a backup (safety) policy is trained via the Safety Bellman Equation from Hamilton-Jacobi reachability and a supervisory shield decides at runtime when to abort the performance policy and hand control to the backup. Adds PAC-Bayes generalization bounds on safety for deployment in unseen environments — directly relevant as a principled learned-safety-monitor-plus-recovery-controller architecture transferable to aerial navigation."
+  },
+  {
+   "citation": "A. Banerjee, K. Rahmani, J. Biswas, and I. Dillig, \"Dynamic Model Predictive Shielding for Provably Safe Reinforcement Learning,\" Advances in Neural Information Processing Systems 37 (NeurIPS 2024). arXiv:2405.13863. https://arxiv.org/abs/2405.13863",
+   "relevance": "Extends model predictive shielding: instead of a fixed static backup policy, a local planner dynamically synthesizes safe recovery actions that preserve provable safety while still maximizing short- and long-term reward, so aborts recover toward task progress rather than mere stopping. Useful as the state of the art on making abort/recovery interventions less conservative in provably safe RL."
+  },
+  {
+   "citation": "L. Bartolomei, Y. Kompis, L. Teixeira, and M. Chli, \"Autonomous Emergency Landing for Multicopters using Deep Reinforcement Learning,\" Proc. IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), Kyoto, 2022, pp. 3392-3399. https://ieeexplore.ieee.org/document/9981152/",
+   "relevance": "Directly on active abort in aerial robotics: a deep-RL pipeline (ETH Zurich Vision for Robotics Lab) for aborting a multicopter mission under emergencies such as mechanical malfunction, low battery, localization failure, or GPS jamming, using semantic and depth input to steer toward safe landing areas as fast as possible under safety constraints. Code released (VIS4ROB-lab/multirotors_landing), making it a strong practical baseline for learned emergency-termination behaviors on drones."
+  },
+  {
+   "citation": "I. R. Ward, M. Paral, K. Riordan, and M. J. Kochenderfer, \"Improving the Resilience of Quadrotors in Underground Environments by Combining Learning-based and Safety Controllers,\" Proc. 11th International Conference on Control, Decision and Information Technologies (CoDIT), 2025. arXiv:2509.02808. https://arxiv.org/abs/2509.02808",
+   "relevance": "A concrete learned safety monitor for drones: a normalizing-flow prior over environment observations serves as a runtime out-of-distribution detector that triggers a switch from the fast learned navigation controller to a conservative safety controller with collision-avoidance guarantees. Directly relevant as evidence for monitor-triggered fallback (abort-to-safe-controller) architectures on quadrotors in degraded environments."
+  },
+  {
+   "citation": "A. Zhao, Y. Zhong, K. Hoi, J. Mou, J. Wang, L. Wang, J. Hou, and F. Gao, \"Agile Fall Recovery for Quadrotors with Bidirectional Thrust via Reinforcement Learning,\" arXiv preprint arXiv:2606.16513, 2026. https://arxiv.org/abs/2606.16513",
+   "relevance": "Recent (June 2026) recovery-controller work: an RL policy (recurrent, asymmetric actor-critic with an INDI inner loop) that recovers a quadrotor from arbitrary post-failure ground attitudes to stable hover using only lightweight onboard sensors, with zero-shot sim-to-real transfer under wind and payload disturbances. Covers the post-abort/post-crash recovery end of the pipeline — what a learned policy can do after a termination or fall event rather than just avoiding one."
+  },
+  {
+   "citation": "J. Lin, L. Wang, F. Gao, S. Shen, and F. Zhang, \"Flying through a narrow gap using neural network: an end-to-end planning and control approach,\" IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), 2019. arXiv:1903.09088. https://arxiv.org/abs/1903.09088",
+   "relevance": "Foundational imitate-then-reinforce framework: an end-to-end policy network imitates a traditional planner/controller and is fine-tuned with RL to fly a quadrotor through tilted narrow gaps (state-based input, not raw vision)."
+  },
+  {
+   "citation": "C. Xiao, P. Lu, and Q. He, \"Flying Through a Narrow Gap Using End-to-End Deep Reinforcement Learning Augmented With Curriculum Learning and Sim2Real,\" IEEE Transactions on Neural Networks and Learning Systems, vol. 34, no. 5, pp. 2701-2708, 2023. https://ieeexplore.ieee.org/document/9530254/",
+   "relevance": "End-to-end deep RL with curriculum learning to overcome the sparse reward behind the gap, plus a Sim2Real transfer scheme demonstrated on a real quadrotor without real-flight training data."
+  },
+  {
+   "citation": "Y. Xie, M. Lu, R. Peng, and P. Lu, \"Learning Agile Flights Through Narrow Gaps with Varying Angles Using Onboard Sensing,\" IEEE Robotics and Automation Letters, vol. 8, 2023. arXiv:2302.11233. https://arxiv.org/abs/2302.11233",
+   "relevance": "Deep RL policy that traverses unknown, tilted narrow gaps using gap detection from a single onboard camera, handling varying gap angles with aggressive attitude alignment."
+  },
+  {
+   "citation": "J. Xing, A. Romero, L. Bauersfeld, and D. Scaramuzza, \"Bootstrapping Reinforcement Learning with Imitation for Vision-Based Agile Flight,\" Conference on Robot Learning (CoRL), Munich, 2024. arXiv:2403.12203. https://arxiv.org/abs/2403.12203",
+   "relevance": "Combines RL performance with imitation-learning sample efficiency to train visuomotor policies (raw pixels to commands) for agile flight through racing gates/window-like openings."
+  },
+  {
+   "citation": "T. Wu, G. Xu, Z. Wang, J. Lin, T. Chen, Y. Wu, Z. Han, Z. Liu, and F. Gao, \"Precise aggressive aerial maneuvers with sensorimotor policies,\" Science Robotics, 2026. DOI: 10.1126/scirobotics.aeb0180. arXiv:2604.05828. https://www.science.org/doi/10.1126/scirobotics.aeb0180",
+   "relevance": "RL-trained, distilled sensorimotor policy mapping onboard vision and proprioception directly to low-level commands, traversing gaps at 5 cm clearance and up to 90-degree tilt without prior gap pose knowledge."
+  },
+  {
+   "citation": "L. Zhang, Y. Hu, F. Yu, Y. Deng, W. Yu, and D. Zou, \"Vision-Based End-to-End Learning for UAV Traversal of Irregular Gaps via Differentiable Simulation,\" arXiv:2604.02779, 2026. https://arxiv.org/abs/2604.02779",
+   "relevance": "End-to-end vision policy mapping depth images directly to control commands for agile traversal of narrow and irregular gaps, trained efficiently via differentiable simulation."
+  }
+ ]
+}
