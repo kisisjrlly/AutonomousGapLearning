@@ -71,6 +71,7 @@ def run_eval(model, cfg, split, n_tasks, device, wipe_context=False,
                 "gap_cz", "feasible", "geo_margin")}
     task_np["wind_mag"] = bank["dyn"]["wind_steady"].norm(dim=-1).cpu().numpy()
     task_np["mass"] = bank["dyn"]["mass"].cpu().numpy()
+    task_np["twr"] = (bank["dyn"]["tmax"] / (bank["dyn"]["mass"] * 9.81)).cpu().numpy()
 
     frames = (np.zeros((T, save_frames, 3, ecfg.sensor.img_h, ecfg.sensor.img_w),
                        dtype=np.uint8) if save_frames else None)

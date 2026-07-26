@@ -62,6 +62,14 @@ def segment_attempts(rec, task, steps_used, retry_x=1.2, ep_len=960):
                 "feasible": bool(task["feasible"][i] > 0.5),
             })
         sat = (np.abs(rec["act"][:L, i]) >= 0.99).any(axis=-1).mean() if L else 0.0
+        # shadow safety kernel (measurement only): conservative stopping envelope
+        twr = float(task.get("twr", np.full(N, 2.8))[i])
+        a_brake = 9.81 * max(twr * twr - 1.0, 0.25) ** 0.5
+        spd = np.linalg.norm(rec["v"][:L, i], axis=-1)
+        stop_d = spd * spd / (2 * a_brake) + spd * 0.075
+        dclear = np.diff(clear, prepend=clear[:1])
+        viol = (clear < stop_d) & (dclear < 0) & ina
+        stop_viol = float(viol.mean()) if L else 0.0
         episodes.append({
             "env": i, "n_attempts": n_att, "success": bool(ep_succ),
             "collision": bool(ep_coll), "collision_high": bool(ep_coll_hi),
@@ -70,6 +78,7 @@ def segment_attempts(rec, task, steps_used, retry_x=1.2, ep_len=960):
             "sat_frac": float(sat),
             "feasible": bool(task["feasible"][i] > 0.5),
             "gap_w": float(task["gap_w"][i]), "geo_margin": float(task["geo_margin"][i]),
+            "stop_viol": stop_viol,
         })
     return attempts, episodes
 
@@ -128,6 +137,7 @@ def summarize(attempts, episodes, max_k=5):
         "timeout_rate": _rate([e["timeout"] for e in eps]),
         "oob_rate": _rate([e["oob"] for e in eps]),
         "sat_frac_mean": _rate([e["sat_frac"] for e in eps]),
+        "stop_envelope_violation_frac": _rate([e["stop_viol"] for e in eps]),
         "ep_len_mean": _rate([e["ep_len"] for e in eps]),
     }
     # in-context adaptation evidence: alignment-error change after an abort
