@@ -51,7 +51,7 @@ def make_bank(cfg, split, n, device):
 
 @torch.no_grad()
 def run_eval(model, cfg, split, n_tasks, device, wipe_context=False,
-             reset_between_attempts=False, noise_seed=1234):
+             reset_between_attempts=False, noise_seed=1234, save_frames=0):
     torch.manual_seed(noise_seed)  # observation noise reproducibility
     ecfg = copy.deepcopy(cfg)
     ecfg.sim.n_envs = n_tasks
@@ -72,6 +72,8 @@ def run_eval(model, cfg, split, n_tasks, device, wipe_context=False,
     task_np["wind_mag"] = bank["dyn"]["wind_steady"].norm(dim=-1).cpu().numpy()
     task_np["mass"] = bank["dyn"]["mass"].cpu().numpy()
 
+    frames = (np.zeros((T, save_frames, 3, ecfg.sensor.img_h, ecfg.sensor.img_w),
+                       dtype=np.uint8) if save_frames else None)
     h = model.init_hidden(N, device)
     obs = env.observe()
     priv = torch.zeros(N, 21, device=device)
@@ -84,6 +86,8 @@ def run_eval(model, cfg, split, n_tasks, device, wipe_context=False,
         rec["v"][t] = env.state["v"].cpu().numpy()
         rec["q"][t] = env.state["q"].cpu().numpy()
         rec["act"][t] = act.cpu().numpy()
+        if save_frames:
+            frames[t] = (obs["img"][:save_frames] * 255).to(torch.uint8).cpu().numpy()
         obs, rew, done, info = env.step(act)
         priv = info["priv"]
         h = h_new
@@ -105,6 +109,8 @@ def run_eval(model, cfg, split, n_tasks, device, wipe_context=False,
             break
     tmax = int(steps_used.max())
     rec = {k: v[:tmax] for k, v in rec.items()}
+    if save_frames:
+        rec["frames"] = frames[:tmax]
     return rec, task_np, steps_used
 
 
