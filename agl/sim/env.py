@@ -213,8 +213,11 @@ class GapEnv:
         rew = rew + r.abort_bonus * aborted.float()
         frac_left = 1.0 - self.t_step.float() / cfg.sim.ep_len
         rew = rew + success.float() * (r.success + r.success_time_bonus * frac_left)
-        rew = rew + coll_high.float() * r.collision_high
-        rew = rew + coll_soft.float() * r.collision_soft
+        anneal = min(self.difficulty / max(r.coll_anneal_end, 1e-6), 1.0)
+        pen_hi = r.collision_high_easy + (r.collision_high - r.collision_high_easy) * anneal
+        pen_so = r.collision_soft_easy + (r.collision_soft - r.collision_soft_easy) * anneal
+        rew = rew + coll_high.float() * pen_hi
+        rew = rew + coll_soft.float() * pen_so
         rew = rew + oob.float() * r.oob
         self.prev_action = action.clone()  # clone: _reset_envs mutates rows in place
 

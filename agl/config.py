@@ -40,6 +40,7 @@ class TaskCfg:
     roll_max_deg_easy: float = 10.0
     wall_x_lo: float = 2.5
     wall_x_hi: float = 4.5
+    wall_x_hi_easy: float = 3.0
     gap_cy: float = 0.8             # |gap center y| <= this
     gap_cz_lo: float = 1.0
     gap_cz_hi: float = 2.2
@@ -99,6 +100,9 @@ class RewardCfg:
     success_time_bonus: float = 4.0     # * fraction of episode time remaining
     collision_high: float = -10.0
     collision_soft: float = -4.0
+    collision_high_easy: float = -3.0   # annealed to full penalty by anneal_end
+    collision_soft_easy: float = -1.5
+    coll_anneal_end: float = 0.5        # difficulty at which penalty reaches full
     oob: float = -4.0
     contact_soft_ke: float = 0.25       # J threshold high/soft contact energy
     progress_k: float = 0.6             # potential: -k * dist(p, target behind gap)

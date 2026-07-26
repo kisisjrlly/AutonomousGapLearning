@@ -47,7 +47,7 @@ def sample_tasks(n: int, cfg, difficulty: float, device, gen=None) -> dict:
         "gap_w": width,
         "gap_h": height,
         "gap_roll": _u(n, -roll_max, roll_max, d, gen),
-        "wall_x": _u(n, t.wall_x_lo, t.wall_x_hi, d, gen),
+        "wall_x": _u(n, t.wall_x_lo, lerp(t.wall_x_hi_easy, t.wall_x_hi, lam), d, gen),
         "thick": _u(n, t.thick_lo, t.thick_hi, d, gen),
         "gap_cy": _u(n, -t.gap_cy * lerp(0.5, 1.0, lam), t.gap_cy * lerp(0.5, 1.0, lam), d, gen),
         "gap_cz": _u(n, cz_lo, cz_hi, d, gen),

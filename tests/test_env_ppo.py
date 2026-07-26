@@ -82,7 +82,7 @@ def test_attempt_state_machine():
 
 def test_collision_terminates_negative():
     cfg = small_cfg(4)
-    env = GapEnv(cfg, DEV, difficulty=0.0)
+    env = GapEnv(cfg, DEV, difficulty=1.0)  # full collision penalty at lambda=1
     a = hover_action(env)
     env.state["p"][:, 0] = env.task["wall_x"] + 0.02
     env.state["p"][:, 1] = 3.0   # far from any gap
