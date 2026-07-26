@@ -20,6 +20,7 @@ class Rollout:
         self.val = torch.zeros(T, N, device=device)
         self.rew = torch.zeros(T, N, device=device)
         self.done = torch.zeros(T, N, dtype=torch.bool, device=device)
+        self.trunc = torch.zeros(T, N, dtype=torch.bool, device=device)
         self.hreset = torch.zeros(T, N, dtype=torch.bool, device=device)
         self.clear = torch.zeros(T, N, device=device)
         self.collision = torch.zeros(T, N, dtype=torch.bool, device=device)
@@ -34,12 +35,15 @@ class Rollout:
 
 
 def compute_gae(ro: Rollout, last_val, gamma, lam):
+    """GAE with time-limit bootstrapping: truncated (not terminated) steps
+    bootstrap with V(s_t) as a stand-in for the unavailable V(s_{t+1})."""
     adv = torch.zeros_like(ro.rew)
     gae = torch.zeros(ro.N, device=ro.rew.device)
     for t in reversed(range(ro.T)):
         nonterm = (~ro.done[t]).float()
         v_next = last_val if t == ro.T - 1 else ro.val[t + 1]
-        delta = ro.rew[t] + gamma * v_next * nonterm - ro.val[t]
+        v_boot = v_next * nonterm + ro.val[t] * ro.trunc[t].float()
+        delta = ro.rew[t] + gamma * v_boot - ro.val[t]
         gae = delta + gamma * lam * nonterm * gae
         adv[t] = gae
     ro.adv = adv
@@ -54,7 +58,7 @@ def aux_labels(ro: Rollout, horizon: int):
     succ_l = torch.zeros(T, N, device=dev)
     succ_m = torch.zeros(T, N, dtype=torch.bool, device=dev)
     c = torch.zeros(N, dtype=torch.long, device=dev)          # collision-ahead counter
-    vis = torch.full((N,), -1, dtype=torch.long, device=dev)  # known-future marker
+    dcnt = torch.zeros(N, dtype=torch.long, device=dev)       # done-within-window counter
     cur_out = torch.full((N,), -1, dtype=torch.long, device=dev)
     cur_aid = torch.zeros(N, dtype=torch.long, device=dev)
     H = horizon
@@ -62,10 +66,11 @@ def aux_labels(ro: Rollout, horizon: int):
         coll, done = ro.collision[t], ro.done[t]
         c = torch.where(coll, torch.full_like(c, H),
                         torch.where(done, torch.zeros_like(c), (c - 1).clamp_min(0)))
-        vis = torch.where(done, torch.full_like(vis, H),
-                          torch.where(vis < 0, vis, (vis + 1).clamp_max(H)))
+        dcnt = torch.where(done, torch.full_like(dcnt, H), (dcnt - 1).clamp_min(0))
         coll_l[t] = (c > 0).float()
-        coll_m[t] = (c > 0) | (vis == H)
+        # label known iff: collision seen in window, or episode ends inside the
+        # window, or the whole window lies inside the rollout buffer
+        coll_m[t] = (c > 0) | (dcnt > 0) | (t + H <= T)
         ee = ro.end_event[t]
         cur_out = torch.where(ee, ro.end_outcome[t], cur_out)
         cur_aid = torch.where(ee, ro.attempt_id[t], cur_aid)

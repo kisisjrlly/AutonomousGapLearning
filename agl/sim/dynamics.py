@@ -36,8 +36,14 @@ def action_to_cmd(a: torch.Tensor, dyn: dict) -> tuple[torch.Tensor, torch.Tenso
 
 
 def step(state: dict, t_cmd: torch.Tensor, w_cmd: torch.Tensor, dyn: dict,
-         dt: float, substeps: int, gen: torch.Generator | None = None):
-    """Advance physics by one control period (substeps * dt_phys)."""
+         dt: float, substeps: int, gen: torch.Generator | None = None,
+         substep_cb=None):
+    """Advance physics by one control period (substeps * dt_phys).
+
+    substep_cb(state), if given, runs after EVERY physics substep — used for
+    substep-rate collision checking so thin walls cannot be tunneled through
+    or grazed between control-rate samples.
+    """
     dtp = dt / substeps
     g_vec = torch.tensor([0.0, 0.0, -G], device=t_cmd.device)
     m = dyn["mass"]
@@ -58,6 +64,8 @@ def step(state: dict, t_cmd: torch.Tensor, w_cmd: torch.Tensor, dyn: dict,
         acc = g_vec + f_world / m.unsqueeze(-1) - drag
         state["v"] += dtp * acc
         state["p"] += dtp * state["v"]
+        if substep_cb is not None:
+            substep_cb(state)
     # accelerometer specific force (world acc minus gravity, in body frame)
     state["spec_force"] = quat_rotate_inv(state["q"], acc - g_vec)
     # OU gust process at control rate

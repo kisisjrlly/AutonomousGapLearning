@@ -143,7 +143,20 @@ class GapEnv:
         applied = self.delay_buf[torch.arange(n, device=dev), sel]
         self.buf_ptr = (self.buf_ptr + 1) % D
         t_cmd, w_cmd = dynamics.action_to_cmd(applied, self.task["dyn"])
-        dynamics.step(st, t_cmd, w_cmd, self.task["dyn"], cfg.sim.dt_ctrl, cfg.sim.substeps)
+        # substep-rate collision accumulation (prevents tunneling/grazing misses)
+        min_clear = torch.full((n,), 1e9, device=dev)
+        contact_speed = torch.full((n,), -1.0, device=dev)
+
+        def _cb(s):
+            nonlocal min_clear, contact_speed
+            c = collision.clearance(s["p"], s["q"], self.task, self.bpts,
+                                    cfg.sim.arena_y, cfg.sim.arena_z)
+            newly = (c < 0.0) & (contact_speed < 0.0)
+            contact_speed = torch.where(newly, s["v"].norm(dim=-1), contact_speed)
+            min_clear = torch.minimum(min_clear, c)
+
+        dynamics.step(st, t_cmd, w_cmd, self.task["dyn"], cfg.sim.dt_ctrl,
+                      cfg.sim.substeps, substep_cb=_cb)
         # sensor bias OU
         s = cfg.sensor
         dt = cfg.sim.dt_ctrl
@@ -153,15 +166,15 @@ class GapEnv:
             + (dt ** 0.5) * s.z_bias_sigma * torch.randn(n, device=dev) * 0.1
         self.t_step += 1
 
-        clear = collision.clearance(st["p"], st["q"], self.task, self.bpts,
-                                    cfg.sim.arena_y, cfg.sim.arena_z)
+        clear = min_clear
         self.ep_min_clear = torch.minimum(self.ep_min_clear, clear)
         x = st["p"][:, 0]
         speed = st["v"].norm(dim=-1)
 
         # ---- events ----
         contact = clear < 0.0
-        ke = 0.5 * self.task["dyn"]["mass"] * speed.square()
+        cspeed = torch.where(contact_speed >= 0.0, contact_speed, speed)
+        ke = 0.5 * self.task["dyn"]["mass"] * cspeed.square()
         coll_high = contact & (ke > cfg.reward.contact_soft_ke)
         coll_soft = contact & ~coll_high
         succ_x = self.task["wall_x"] + self.task["thick"] + cfg.sim.succ_margin
@@ -226,7 +239,7 @@ class GapEnv:
             "collision_high": coll_high, "attempt_id": self.attempts.clone(),
             "in_attempt": self.in_attempt.clone(), "end_event": end_event,
             "end_outcome": end_outcome, "terminated": terminated, "truncated": truncated,
-            "oob": oob, "gave_up": gave_up & ~contact, "priv": self.privileged(clear),
+            "oob": oob, "gave_up": gave_up & ~contact,
         }
 
         # ---- episode records + auto-reset ----
@@ -246,6 +259,16 @@ class GapEnv:
                 "geo_margin": self.task["geo_margin"][di],
             }
             self._reset_envs(di)
+        # privileged vector must describe the post-reset state for done envs
+        # (it is stored aligned with the NEXT observation by the trainer)
+        if done_idx.numel() > 0:
+            clear2 = clear.clone()
+            clear2[done_idx] = collision.clearance(
+                st["p"][done_idx], st["q"][done_idx], self._task_slice(done_idx),
+                self.bpts, cfg.sim.arena_y, cfg.sim.arena_z)
+        else:
+            clear2 = clear
+        info["priv"] = self.privileged(clear2)
         obs = self.observe()
         # refresh delayed frame for non-reset envs
         live = ~done

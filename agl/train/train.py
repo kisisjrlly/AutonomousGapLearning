@@ -81,7 +81,13 @@ class Trainer:
         except Exception:
             pass
         self.csv_path = os.path.join(run_dir, "log.csv")
-        self.csv_keys = None
+        self.csv_keys = (
+            ["iter", "steps", "time", "sps", "difficulty", "succ_ema", "rew_mean",
+             "log_std", "pi_loss", "v_loss", "ent", "aux_loss", "clipfrac", "kl", "lr"]
+            + [f"ep/{k}" for k in EpisodeStats.FIELDS]
+            + ["ep/n", "ep/success_feasible", "ep/giveup_infeasible"])
+        with open(self.csv_path, "w", newline="") as f:
+            csv.writer(f).writerow(self.csv_keys)
         self.tb = None
         try:
             from torch.utils.tensorboard import SummaryWriter
@@ -117,6 +123,7 @@ class Trainer:
             self.priv = info["priv"]
             ro.rew[t] = rew
             ro.done[t] = done
+            ro.trunc[t] = info["truncated"]
             ro.clear[t] = info["clearance"]
             ro.collision[t] = info["collision"]
             ro.in_attempt[t] = info["in_attempt"]
@@ -149,10 +156,6 @@ class Trainer:
         self.env.difficulty = lam
 
     def log(self, row):
-        if self.csv_keys is None:
-            self.csv_keys = list(row.keys())
-            with open(self.csv_path, "w", newline="") as f:
-                csv.writer(f).writerow(self.csv_keys)
         with open(self.csv_path, "a", newline="") as f:
             csv.writer(f).writerow([row.get(k, "") for k in self.csv_keys])
         if self.tb:

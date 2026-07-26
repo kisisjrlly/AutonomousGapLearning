@@ -158,3 +158,21 @@ def test_no_memory_variant_runs():
     tr = Trainer(cfg, "/tmp/claude-1000/-home-zhaoguodong-work-code-AutonomousGapLearning/6824d512-47fc-4c76-be8f-cc4b18bbc0ef/scratchpad/ppo_smoke_nomem", DEV)
     tr.run()
     assert tr.iter == 1
+
+
+def test_substep_collision_no_tunneling():
+    """A fast drone crossing a thin wall within one control step must be caught."""
+    cfg = small_cfg(4)
+    env = GapEnv(cfg, DEV, difficulty=1.0)
+    a = hover_action(env)
+    env.task["wall_x"][:] = 3.0
+    env.task["thick"][:] = 0.05
+    env.task["gap_cy"][:] = 0.0
+    env.task["gap_cz"][:] = 1.5
+    env.task["gap_w"][:] = 0.5
+    env.task["gap_h"][:] = 0.5
+    env.state["p"][:] = torch.tensor([2.75, 2.0, 1.5], device=DEV)  # off-gap
+    env.state["v"][:] = torch.tensor([14.0, 0.0, 0.0], device=DEV)  # 35 cm/step
+    _, _, done, info = env.step(a)
+    assert info["collision"].all() and done.all()
+    assert info["collision_high"].all()  # 14 m/s is far above soft threshold
