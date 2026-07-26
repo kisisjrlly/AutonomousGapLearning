@@ -26,10 +26,14 @@ class SimCfg:
 class TaskCfg:
     # gap geometry ranges (difficulty lambda in [0,1] interpolates *_easy -> value)
     width_lo: float = 0.34
-    width_lo_easy: float = 0.55
+    width_lo_easy: float = 0.80
     width_hi: float = 0.90
+    width_hi_easy: float = 1.40
     height_lo: float = 0.30
+    height_lo_easy: float = 0.60
     height_hi: float = 0.80
+    height_hi_easy: float = 1.00
+    gap_cz_spread_easy: float = 0.25  # easy: gap centers near start altitude
     thick_lo: float = 0.05
     thick_hi: float = 0.30
     roll_max_deg: float = 40.0      # in-plane gap roll; scaled by difficulty
@@ -105,6 +109,10 @@ class RewardCfg:
     wall_prox_k: float = 0.5            # approach-region wall proximity penalty
     wall_prox_margin: float = 0.15
     wall_prox_xgate: float = 0.20       # only active at x < wall_x - gate
+    boundary_k: float = 0.05            # soft arena-boundary inward shaping
+    bound_y: float = 3.5
+    bound_z: float = 3.5
+    bound_x_back: float = -1.0
     smooth_k: float = 0.01
     giveup_hover_s: float = 4.0         # measurement: dwell in retry zone => give up
     giveup_speed: float = 0.5

@@ -1,0 +1,3 @@
+run_name: no_aux
+model:
+  use_aux: false

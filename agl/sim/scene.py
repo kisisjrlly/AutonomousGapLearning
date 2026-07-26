@@ -33,19 +33,24 @@ def feasibility(width, height, body_r, body_hh, margin, roll_max_deg, device):
 def sample_tasks(n: int, cfg, difficulty: float, device, gen=None) -> dict:
     t, lam = cfg.task, difficulty
     d = device
-    width = _u(n, lerp(t.width_lo_easy, t.width_lo, lam), t.width_hi, d, gen)
+    width = _u(n, lerp(t.width_lo_easy, t.width_lo, lam),
+               lerp(t.width_hi_easy, t.width_hi, lam), d, gen)
     inf_mask = torch.rand(n, device=d, generator=gen) < (t.infeasible_frac * lam)
     width = torch.where(inf_mask, _u(n, t.infeasible_w_lo, t.infeasible_w_hi, d, gen), width)
-    height = _u(n, t.height_lo, t.height_hi, d, gen)
+    height = _u(n, lerp(t.height_lo_easy, t.height_lo, lam),
+                lerp(t.height_hi_easy, t.height_hi, lam), d, gen)
     roll_max = math.radians(lerp(t.roll_max_deg_easy, t.roll_max_deg, lam))
+    cz_mid = 0.5 * (t.gap_cz_lo + t.gap_cz_hi)
+    cz_lo = lerp(cz_mid - t.gap_cz_spread_easy, t.gap_cz_lo, lam)
+    cz_hi = lerp(cz_mid + t.gap_cz_spread_easy, t.gap_cz_hi, lam)
     task = {
         "gap_w": width,
         "gap_h": height,
         "gap_roll": _u(n, -roll_max, roll_max, d, gen),
         "wall_x": _u(n, t.wall_x_lo, t.wall_x_hi, d, gen),
         "thick": _u(n, t.thick_lo, t.thick_hi, d, gen),
-        "gap_cy": _u(n, -t.gap_cy, t.gap_cy, d, gen),
-        "gap_cz": _u(n, t.gap_cz_lo, t.gap_cz_hi, d, gen),
+        "gap_cy": _u(n, -t.gap_cy * lerp(0.5, 1.0, lam), t.gap_cy * lerp(0.5, 1.0, lam), d, gen),
+        "gap_cz": _u(n, cz_lo, cz_hi, d, gen),
     }
     feas, gm = feasibility(width, height, cfg.sim.body_r, cfg.sim.body_hh,
                            t.feas_margin, t.feas_roll_max_deg, d)

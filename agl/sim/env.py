@@ -203,6 +203,11 @@ class GapEnv:
         rew = rew - r.wall_prox_k * torch.where(
             near_gate, (r.wall_prox_margin - clear).clamp_min(0.0), torch.zeros_like(clear))
         rew = rew - r.smooth_k * (action - self.prev_action).square().sum(-1)
+        # soft arena boundary: gentle inward field, task-independent
+        over = (st["p"][:, 1].abs() - r.bound_y).clamp_min(0.0) \
+            + (st["p"][:, 2] - r.bound_z).clamp_min(0.0) \
+            + (r.bound_x_back - st["p"][:, 0]).clamp_min(0.0)
+        rew = rew - r.boundary_k * over
         rew = rew - r.attempt_cost * crossed_in.float()
         rew = rew + r.first_attempt_bonus * (crossed_in & (self.attempts == 1)).float()
         rew = rew + r.abort_bonus * aborted.float()
@@ -218,7 +223,7 @@ class GapEnv:
             "collision_high": coll_high, "attempt_id": self.attempts.clone(),
             "in_attempt": self.in_attempt.clone(), "end_event": end_event,
             "end_outcome": end_outcome, "terminated": terminated, "truncated": truncated,
-            "priv": self.privileged(clear),
+            "oob": oob, "gave_up": gave_up & ~contact, "priv": self.privileged(clear),
         }
 
         # ---- episode records + auto-reset ----

@@ -1,0 +1,3 @@
+run_name: no_prev_action
+model:
+  use_prev_action: false

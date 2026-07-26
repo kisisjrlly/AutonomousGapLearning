@@ -1,0 +1,3 @@
+run_name: no_memory
+model:
+  use_memory: false
