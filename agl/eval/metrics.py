@@ -124,6 +124,9 @@ def summarize(attempts, episodes, max_k=5):
         "abort_min_clear_mean": _rate([a["min_clear"] for a in aborts]),
         "abort_depth_mean": _rate([a["depth"] for a in aborts]),
         "abort_recovery_rate": _rate(recov),
+        "n_attempts_mean": _rate([e["n_attempts"] for e in eps]),
+        "ep_with_abort_frac": _rate([any(a["outcome"] == ABORT for a in att
+                                         if a["env"] == e["env"]) for e in eps]),
         "collision_rate_ep": _rate([e["collision"] for e in eps]),
         "collision_high_rate_ep": _rate([e["collision_high"] for e in eps]),
         "collision_rate_per_attempt": _rate([a["outcome"] == COLLISION for a in att]),

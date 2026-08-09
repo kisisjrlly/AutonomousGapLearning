@@ -80,3 +80,10 @@ no-prev-action；no-aux；full+eval-context-wipe（免训练）。
 仿真研究；网络接口（CTBR@40 Hz、RGB+IMU+VIO）与实际飞控栈对齐；
 渲染为程序化平面着色而非照片级——sim-to-real 需真实视觉域适配 + 外部安全系统下的
 渐进部署（README 阶段4–5），本文不宣称真机结果。
+
+## Deployment cost（实测，2026-08-09）
+
+- 参数量：总量 1.68M；部署路径（编码器+GRU+动作头，不含批评家/辅助头）1.49M。
+- 单流推理延迟：CUDA 1.53 ms/步（653 Hz）；CPU 1.42 ms/步（703 Hz）——40 Hz 控制需求
+  余量约 17×。CPU 单核即可闭环，机载无需 GPU（感知预处理预算剩余充裕）。
+- 工具：agl/analysis/latency.py（评估时固定权重、均值动作、批量=1 顺序推理）。
