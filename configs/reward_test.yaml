@@ -1,0 +1,3 @@
+run_name: reward_test
+curriculum:
+  start: 0.6

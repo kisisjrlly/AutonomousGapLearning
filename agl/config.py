@@ -105,11 +105,13 @@ class RewardCfg:
     coll_anneal_end: float = 0.5        # difficulty at which penalty reaches full
     oob: float = -4.0
     contact_soft_ke: float = 0.25       # J threshold high/soft contact energy
-    progress_k: float = 0.6             # potential: -k * dist(p, target behind gap)
+    progress_k: float = 0.6             # potential: +k * forward progress toward target
+    progress_asymmetric: bool = True    # no penalty for retreating (enables safe abort exploration)
     step_cost: float = 0.002
     attempt_cost: float = 0.3
     first_attempt_bonus: float = 0.5    # once per episode, counters passivity
-    abort_bonus: float = 0.2            # safe return to retry zone, no contact
+    abort_bonus: float = 0.3            # base reward for a safe return to retry zone
+    abort_depth_bonus: float = 1.2      # * depth reached in the aborted attempt (anti-farming)
     wall_prox_k: float = 0.5            # approach-region wall proximity penalty
     wall_prox_margin: float = 0.15
     wall_prox_xgate: float = 0.20       # only active at x < wall_x - gate

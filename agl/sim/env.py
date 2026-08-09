@@ -36,6 +36,7 @@ class GapEnv:
         self.t_step = torch.zeros(n, dtype=torch.long, device=self.dev)
         self.attempts = torch.zeros(n, dtype=torch.long, device=self.dev)
         self.in_attempt = torch.zeros(n, dtype=torch.bool, device=self.dev)
+        self.attempt_depth = torch.zeros(n, device=self.dev)
         self.retry_dwell = torch.zeros(n, dtype=torch.long, device=self.dev)
         self.ep_min_clear = torch.full((n,), 10.0, device=self.dev)
         self.prev_dist = z1()
@@ -71,6 +72,7 @@ class GapEnv:
         self.t_step[idx] = 0
         self.attempts[idx] = 0
         self.in_attempt[idx] = False
+        self.attempt_depth[idx] = 0.0
         self.retry_dwell[idx] = 0
         self.ep_min_clear[idx] = 10.0
         self.prev_dist[idx] = (self.state["p"][idx] - self._target()[idx]).norm(dim=-1)
@@ -186,6 +188,9 @@ class GapEnv:
         crossed_in = ~self.in_attempt & (x >= cfg.sim.retry_x) & ~contact
         self.attempts = self.attempts + crossed_in.long()
         self.in_attempt = self.in_attempt | crossed_in
+        # deepest point reached in the current attempt (drives the depth-scaled abort reward)
+        self.attempt_depth = torch.where(self.in_attempt, torch.maximum(self.attempt_depth, x),
+                                         torch.zeros_like(x))
         crossed_out = self.in_attempt & (x < cfg.sim.retry_x)
         aborted = crossed_out & ~contact & ~oob
         self.in_attempt = self.in_attempt & ~crossed_out
@@ -209,7 +214,10 @@ class GapEnv:
         # ---- reward ----
         r = cfg.reward
         dist = (st["p"] - self._target()).norm(dim=-1)
-        rew = r.progress_k * (self.prev_dist - dist)
+        dp = self.prev_dist - dist
+        if r.progress_asymmetric:
+            dp = dp.clamp_min(0.0)      # retreat earns no progress penalty (enables safe aborts)
+        rew = r.progress_k * dp
         self.prev_dist = dist
         rew = rew - r.step_cost
         near_gate = x < (self.task["wall_x"] - r.wall_prox_xgate)
@@ -223,7 +231,10 @@ class GapEnv:
         rew = rew - r.boundary_k * over
         rew = rew - r.attempt_cost * crossed_in.float()
         rew = rew + r.first_attempt_bonus * (crossed_in & (self.attempts == 1)).float()
-        rew = rew + r.abort_bonus * aborted.float()
+        depth_frac = ((self.attempt_depth - cfg.sim.retry_x) /
+                      (self.task["wall_x"] - cfg.sim.retry_x)).clamp(0.0, 1.0)
+        rew = rew + r.abort_bonus * aborted.float() \
+            + r.abort_depth_bonus * aborted.float() * depth_frac
         frac_left = 1.0 - self.t_step.float() / cfg.sim.ep_len
         rew = rew + success.float() * (r.success + r.success_time_bonus * frac_left)
         anneal = min(self.difficulty / max(r.coll_anneal_end, 1e-6), 1.0)
