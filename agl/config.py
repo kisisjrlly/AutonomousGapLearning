@@ -157,7 +157,7 @@ class PPOCfg:
     coll_horizon: int = 20              # aux label: collision within 0.5 s
     seed: int = 1
     log_every: int = 10
-    ckpt_every: int = 100
+    ckpt_every: int = 50
 
 
 @dataclass
