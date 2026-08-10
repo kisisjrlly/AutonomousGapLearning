@@ -45,7 +45,11 @@ class Policy(nn.Module):
         trunk_in = c.gru_hidden
         if not c.use_memory:
             self.ff = nn.Sequential(nn.Linear(c.merge_feat, c.gru_hidden), nn.ELU())
-        self.actor = nn.Sequential(nn.Linear(trunk_in, 256), nn.ELU(), nn.Linear(256, 4))
+        # risk feedback: actor conditions on the learned collision probability
+        # (evidence-validity: the policy acts on its own 'is passing verified?' belief)
+        self.risk_fb = getattr(c, "use_risk_feedback", True)
+        act_in = trunk_in + (1 if self.risk_fb else 0)
+        self.actor = nn.Sequential(nn.Linear(act_in, 256), nn.ELU(), nn.Linear(256, 4))
         self.log_std = nn.Parameter(torch.full((4,), c.init_log_std))
         self.priv_fc = nn.Sequential(nn.Linear(PRIV_DIM, c.priv_feat), nn.ELU())
         self.critic = nn.Sequential(nn.Linear(trunk_in + c.priv_feat, 256), nn.ELU(),
@@ -69,11 +73,18 @@ class Policy(nn.Module):
         out = self.ff(feat)
         return out, h
 
+    def act_in(self, out):
+        """Actor input = trunk (+ learned collision probability as risk meter)."""
+        if self.risk_fb:
+            risk = torch.sigmoid(self.aux(out)[:, 1])
+            return torch.cat([out, risk.unsqueeze(-1)], dim=-1)
+        return out
+
     @torch.no_grad()
     def step(self, img, vec, priv, h):
         """Rollout step: returns action-mean, std, value, new hidden."""
         out, h_new = self.core(img, vec, h)
-        mean = self.actor(out)
+        mean = self.actor(self.act_in(out))
         value = self.critic(torch.cat([out, self.priv_fc(priv)], dim=-1)).squeeze(-1)
         return mean, self.log_std.exp(), value, h_new
 
@@ -85,9 +96,14 @@ class Policy(nn.Module):
         for t in range(imgs.shape[0]):
             h = h * (~hresets[t]).unsqueeze(-1).float()
             out, h = self.core(imgs[t], vecs[t], h)
-            means.append(self.actor(out))
+            aux_t = self.aux(out)
+            ai = out
+            if self.risk_fb:
+                risk = torch.sigmoid(aux_t[:, 1])
+                ai = torch.cat([out, risk.unsqueeze(-1)], dim=-1)
+            means.append(self.actor(ai))
             values.append(self.critic(torch.cat([out, self.priv_fc(privs[t])], dim=-1)).squeeze(-1))
-            auxs.append(self.aux(out))
+            auxs.append(aux_t)
         return torch.stack(means), torch.stack(values), torch.stack(auxs)
 
 

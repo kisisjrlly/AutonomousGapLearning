@@ -64,11 +64,10 @@ PYEOF
 eval_run() {
   local name=$1 out="results/$name"
   echo "[eval $(date +%H:%M:%S)] $name"
-  if [ ! -f "$out/eval_id.npz" ]; then
-    $PY -m agl.eval.evaluate --ckpt "runs/$name/ckpt_final.pt" --out "$out" \
-      --n 512 --splits id,ood_geom,ood_dyn || echo "[fail] $name eval"
-  fi
-  if [[ "$name" == full_s* ]] && [ ! -f "$out/eval_id_wipe.npz" ]; then
+  # always re-run (fast, ~1 min) — stale npz from older checkpoints must not be reused
+  $PY -m agl.eval.evaluate --ckpt "runs/$name/ckpt_final.pt" --out "$out" \
+    --n 512 --splits id,ood_geom,ood_dyn || echo "[fail] $name eval"
+  if [[ "$name" == full_s* ]]; then
     $PY -m agl.eval.evaluate --ckpt "runs/$name/ckpt_final.pt" --out "$out" \
       --n 512 --splits id --wipe-context || echo "[fail] $name wipe eval"
   fi

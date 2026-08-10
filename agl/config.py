@@ -112,6 +112,9 @@ class RewardCfg:
     first_attempt_bonus: float = 0.5    # once per episode, counters passivity
     abort_bonus: float = 0.3            # base reward for a safe return to retry zone
     abort_depth_bonus: float = 1.2      # * depth reached in the aborted attempt (anti-farming)
+    retreat_reward_k: float = 0.0       # >0: reward backing away while inside an attempt
+                                        # (directly incentivizes the discoverable retreat motion;
+                                        #  off by default — contingency for abort-skill acquisition)
     wall_prox_k: float = 0.5            # approach-region wall proximity penalty
     wall_prox_margin: float = 0.15
     wall_prox_xgate: float = 0.20       # only active at x < wall_x - gate
@@ -137,6 +140,9 @@ class ModelCfg:
     reset_between_attempts: bool = False  # wipe hidden when re-entering retry zone
     use_prev_action: bool = True
     use_aux: bool = True
+    use_risk_feedback: bool = False     # actor conditions on learned collision probability
+                                        # (evidence-validity: act on 'is passing verified?')
+                                        # default False for old-ckpt compat; set True in recipe_v2
 
 
 @dataclass

@@ -1,0 +1,7 @@
+run_name: recipe_v2
+model:
+  use_risk_feedback: true
+reward:
+  retreat_reward_k: 0.6
+curriculum:
+  step_up: 0.006

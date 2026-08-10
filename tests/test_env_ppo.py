@@ -39,6 +39,7 @@ def test_env_shapes_and_reset():
 
 
 def test_attempt_state_machine():
+    torch.manual_seed(0)  # de-flake: this test teleports state; pin RNG
     cfg = small_cfg(4)
     env = GapEnv(cfg, DEV, difficulty=0.0)
     a = hover_action(env)

@@ -40,6 +40,7 @@ class GapEnv:
         self.retry_dwell = torch.zeros(n, dtype=torch.long, device=self.dev)
         self.ep_min_clear = torch.full((n,), 10.0, device=self.dev)
         self.prev_dist = z1()
+        self.prev_x = z1()
         self.frame = torch.zeros(n, 3, cfg.sensor.img_h, cfg.sensor.img_w, device=self.dev)
         self._reset_envs(torch.arange(n, device=self.dev))
 
@@ -76,6 +77,7 @@ class GapEnv:
         self.retry_dwell[idx] = 0
         self.ep_min_clear[idx] = 10.0
         self.prev_dist[idx] = (self.state["p"][idx] - self._target()[idx]).norm(dim=-1)
+        self.prev_x[idx] = self.state["p"][idx][:, 0]
         self.frame[idx] = render.render(self.state["p"][idx], self.state["q"][idx],
                                         self._task_slice(idx), self.rays, cfg.sensor)
 
@@ -219,6 +221,11 @@ class GapEnv:
             dp = dp.clamp_min(0.0)      # retreat earns no progress penalty (enables safe aborts)
         rew = r.progress_k * dp
         self.prev_dist = dist
+        if r.retreat_reward_k > 0.0:
+            # direct incentive for the retreat motion: backing away inside an attempt
+            retreat = (self.prev_x - st["p"][:, 0]).clamp_min(0.0) * self.in_attempt.float()
+            rew = rew + r.retreat_reward_k * retreat
+        self.prev_x = st["p"][:, 0].clone()
         rew = rew - r.step_cost
         near_gate = x < (self.task["wall_x"] - r.wall_prox_xgate)
         rew = rew - r.wall_prox_k * torch.where(
