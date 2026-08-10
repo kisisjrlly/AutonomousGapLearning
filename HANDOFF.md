@@ -54,23 +54,22 @@ results/<run>/eval_*.npz  评估轨迹（每 episode 逐步记录）
 results/paper/summary.json 论文引用数据的单一来源
 ```
 
-## 3. 当前状态（2026-08-10 17:45 CST）
+## 3. 当前状态（2026-08-10 22:00 CST）
 
-- **决定性干预实验在跑**：`recipe_v2`（120M 步）——**risk 反馈**（actor 显式读取辅助头碰撞
-  概率）+ **撤退奖励**（retreat_reward_k=0.6）+ **慢课程**（step_up 0.006）。
-  目的：让"安全掉头再试"从零训练中涌现（此前 300M 步 fresh run 未涌现，诊断见下）。
-- **已确认的基线（full_s1 300M，新奖励、无 risk 反馈）**：难度 1.0，首尝试成功率 71%
-  （确定性评估 80.7%），碰撞 ~23%，**n_attempts 恒 1.0（无 abort）**——作为"无
-  evidence-validity 机制"的对照保留（runs/full_s1 + results/full_s1/eval_*.npz）。
-- **关键诊断**：
-  - 失败模式 = "全速撞墙"（5.5–6.5 m/s，无减速）——策略把"看似可穿"当"已验证可穿"
-    （假确定性）；
-  - 辅助头风险估计**很准**（AUROC 0.978 @20 步前瞻，碰撞前 10 步风险 0.26→0.73），
-    但 actor 从不据其行动（actor/aux 分离，无风险反馈时 PPO 不激励掉头）。
-- **论文概念框架**：paper/evidence-validity-framing.md（command-measurement-action
-  的单命题实例化）。
-- **尚未产出**：评估聚合、统计检验、图表、论文正文（占位符已就绪）。
-- **机器稳定性**：8/10 起稳定运行 >6h（此前频繁硬冻结）。cron @reboot 已移除（手动恢复）。
+- **训练已暂停（用户明确要求）**：机器在 GPU 满载下频繁硬死机，用户要求不要启动训练/GPU 程序。
+  恢复训练需用户明确指示。恢复命令见 §5。
+- **硬件问题（当前主阻塞）**：i9-13900KF 负载下整机硬冻结（无日志、需断电重启），疑似 Vmin-shift
+  硅片退化或电源预算不足。已做：BIOS 1836 + Intel Default Settings、XMP 关、GPU 功耗限 250W。
+  已架 **被动 GPU 功耗监视器**（agl/analysis/gpu_watch.py，零负载，每秒记录到 runs/gpu_watch.log，
+  @reboot 自动启动）——下次死机时最后一条记录即死机瞬间功耗，用于区分电源 vs 硅片。
+  已整理 **docs/HARDWARE_ISSUE.md**（RMA 证据包，建议走 Intel 5 年质保换 CPU）。
+- **待验证的干预**：recipe_v3（risk 反馈 + 撤退奖励 0.6 + 慢课程 + 刹停余量惩罚 brake_k 0.3 +
+  风险时域 0.5s→1s），旨在让"安全掉头再试"从零训练涌现（此前 fresh run 300M 步未涌现）。
+- **已确认基线（full_s1 300M）**：难度 1.0，首尝试 80.7%，碰撞 23%，n_attempts≈1.0（无 abort）。
+- **已就绪（等数据）**：评估管线（含 risk 校准 AUROC 0.978 基线）、聚合 make_paper_data（已验证）、
+  图表管线（training/adaptation/bars/episode/overview/risk）、论文占位符（abstract/results/
+  intro/related-work/methods）、evidence-validity 概念框架、LLM 思维链候选方案记录。
+- **尚未产出**：评估聚合 summary.json（等最终配方训练）、统计检验、图表、论文正文。
 
 ## 4. 快速上手（完整命令在 docs/PIPELINE.md）
 
