@@ -53,3 +53,21 @@
 - [ ] summary.json 的关键数字（k1/k2 成功率、wipe 对比 p 值、OOD、消融差距）
 - [ ] 图表与论文完成记录
 - [ ] 硬件稳定性结论（监视器若报 segfault/MCE 需记录）
+
+## 2026-08-09（下午：关键行为突破 + 奖励修正 + 干净重启）
+
+- **发现核心行为缺失**：full_s1（旧奖励）跑至 iter 700–870，难度卡死 0.68，
+  **n_attempts 恒为 1.0**——策略要么一次穿过要么撞，从不"掉头重试"。
+  诊断根因：对称进度奖励（0.6·Δdist）**惩罚后退**，直接压制了安全掉头行为的探索空间。
+- **奖励修正（capability-first reward）**，commit `feat: capability-first reward`：
+  - `progress_asymmetric: true`：只奖前进、不罚后退（让撤退探索免费）；
+  - `abort_bonus 0.2→0.3` + 新增 `abort_depth_bonus 1.2`（按尝试深度缩放，深尝试才拿高额，
+    防止浅尝辄止刷分）；
+  - env 新增 `attempt_depth` 追踪本次尝试最深点。
+- **验证（phase1 微调）**：对 iter-800 checkpoint 用新奖励续跑，**n_attempts 从 1.01 爬升至
+  1.32**（iter 810→870）——策略开始学会"过不去就掉头再试"。成功率 ~0.62、碰撞率降至 0.21。
+- **决策：干净重启全战役**。full_s1 混合配方（209M 旧+91M 新）与即将从零开始的 full_s2/s3
+  不一致；论文主模型必须单一一致配方。已将旧 full_s1 存档为 `runs/full_s1_phase1`（数据点），
+  16:56 以新奖励从零重启全 7 run（每 run ~90 min，cron 断点续跑兜底）。
+- **硬件**：今日已 6+ 次硬冻结重启（GPU 满载数分钟→整机冻结→断电重启），@reboot cron
+  持续自动接管训练。等用户执行 `sudo nvidia-smi -pl 220`（限 GPU 功耗，需 root）。

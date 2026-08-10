@@ -53,14 +53,18 @@ results/<run>/eval_*.npz  评估轨迹（每 episode 逐步记录）
 results/paper/summary.json 论文引用数据的单一来源
 ```
 
-## 3. 当前状态（2026-08-09 11:20）
+## 3. 当前状态（2026-08-09 11:20 CST）
 
-- **训练战役在跑**：`bash scripts/run_campaign.sh 300000000`（PID 见 runs/campaign.out）。
-  顺序：full_s1(已续跑)→full_s2→full_s3→no_memory→reset_attempts→no_prev_action→no_aux，
-  每 run 3 亿步，单迭代 ≈5.3 s（RTX 4080），每 run ≈1.5–2 h，全战役 ≈10–12 h。
-- **full_s1 进度**：从 iter 100（29.5M 步，难度 0.0，succ_ema 0.34）续跑；此前到 iter 120 时
-  因机器死机中断。学习信号良好：iter 120 时 ep/success≈0.64（难度 0 下）且仍在上升。
-- **已就绪但尚未产出**：评估（campaign 内自动跑）、聚合、统计检验、图表、论文正文/补充。
+- **训练战役在跑**：`bash scripts/run_campaign.sh 300000000`。**手动触发**（机器重启后不再
+  自动拉起——用户明确要求移除 @reboot 自动训练；恢复命令见 §5）。
+  顺序：full_s1→full_s2→full_s3→no_memory→reset_attempts→no_prev_action→no_aux，
+  每 run 3 亿步，单迭代 ≈5.3 s，每 run ≈1.5 h，全战役 ≈10 h。
+- **关键里程碑**：
+  - 2026-08-09 发现旧奖励（对称进度）压制"安全掉头"行为（难度卡死 0.68、n_attempts 恒 1.0）；
+  - **capability-first reward**（`progress_asymmetric: true` + `abort_depth_bonus 1.2`）
+    使 phase1 微调中 n_attempts 从 1.01 升至 1.32，干净重启后课程爬到**难度 1.0**（iter 700）；
+  - 旧混合配方 run 存档为 `runs/full_s1_phase1`（数据点）；当前 7 run 均为新奖励单一配方从零训练。
+- **尚未产出**：评估结果、聚合数据、统计检验、图表、论文正文。
 - **论文数据全部未生成**：`results/paper/summary.json` 尚不存在。
 
 ## 4. 快速上手（完整命令在 docs/PIPELINE.md）
@@ -91,9 +95,15 @@ $PY -m pytest tests/ -q
 ## 5. 崩溃/重启后的恢复（重要）
 
 - **训练进程死了但机器没死**：campaign 脚本自带重试循环，会自动从 `ckpt_latest.pt` 续跑。
-- **机器硬死机/重启**：campaign 脚本也随进程而死。重启后**只需重新执行**
-  `nohup bash scripts/run_campaign.sh > runs/campaign.out 2>&1 &`——脚本会：
-  ① 跳过已有 `ckpt_final.pt` 的 run；② 无 final 的 run 自动从 `ckpt_latest.pt` 续跑；
+- **机器硬死机/重启**：campaign 脚本随进程而死。重启后**手动执行**以下命令恢复
+  （用户已移除 @reboot 自动拉起——机器稳定性问题解决前不要重新加回）：
+
+  ```bash
+  cd /home/zhaoguodong/work/code/AutonomousGapLearning
+  nohup bash scripts/run_campaign.sh > runs/campaign.out 2>&1 &
+  ```
+
+  脚本会：① 跳过已有 `ckpt_final.pt` 的 run；② 无 final 的 run 自动从 `ckpt_latest.pt` 续跑；
   ③ 各 run 训练完自动评估。
 - **单 run 最多丢失 50 迭代**（ckpt_every=50）。
 
