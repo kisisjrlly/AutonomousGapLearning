@@ -53,19 +53,23 @@ results/<run>/eval_*.npz  评估轨迹（每 episode 逐步记录）
 results/paper/summary.json 论文引用数据的单一来源
 ```
 
-## 3. 当前状态（2026-08-09 11:20 CST）
+## 3. 当前状态（2026-08-10 17:45 CST）
 
-- **训练战役在跑**：`bash scripts/run_campaign.sh 300000000`。**手动触发**（机器重启后不再
-  自动拉起——用户明确要求移除 @reboot 自动训练；恢复命令见 §5）。
-  顺序：full_s1→full_s2→full_s3→no_memory→reset_attempts→no_prev_action→no_aux，
-  每 run 3 亿步，单迭代 ≈5.3 s，每 run ≈1.5 h，全战役 ≈10 h。
-- **关键里程碑**：
-  - 2026-08-09 发现旧奖励（对称进度）压制"安全掉头"行为（难度卡死 0.68、n_attempts 恒 1.0）；
-  - **capability-first reward**（`progress_asymmetric: true` + `abort_depth_bonus 1.2`）
-    使 phase1 微调中 n_attempts 从 1.01 升至 1.32，干净重启后课程爬到**难度 1.0**（iter 700）；
-  - 旧混合配方 run 存档为 `runs/full_s1_phase1`（数据点）；当前 7 run 均为新奖励单一配方从零训练。
-- **尚未产出**：评估结果、聚合数据、统计检验、图表、论文正文。
-- **论文数据全部未生成**：`results/paper/summary.json` 尚不存在。
+- **决定性干预实验在跑**：`recipe_v2`（120M 步）——**risk 反馈**（actor 显式读取辅助头碰撞
+  概率）+ **撤退奖励**（retreat_reward_k=0.6）+ **慢课程**（step_up 0.006）。
+  目的：让"安全掉头再试"从零训练中涌现（此前 300M 步 fresh run 未涌现，诊断见下）。
+- **已确认的基线（full_s1 300M，新奖励、无 risk 反馈）**：难度 1.0，首尝试成功率 71%
+  （确定性评估 80.7%），碰撞 ~23%，**n_attempts 恒 1.0（无 abort）**——作为"无
+  evidence-validity 机制"的对照保留（runs/full_s1 + results/full_s1/eval_*.npz）。
+- **关键诊断**：
+  - 失败模式 = "全速撞墙"（5.5–6.5 m/s，无减速）——策略把"看似可穿"当"已验证可穿"
+    （假确定性）；
+  - 辅助头风险估计**很准**（AUROC 0.978 @20 步前瞻，碰撞前 10 步风险 0.26→0.73），
+    但 actor 从不据其行动（actor/aux 分离，无风险反馈时 PPO 不激励掉头）。
+- **论文概念框架**：paper/evidence-validity-framing.md（command-measurement-action
+  的单命题实例化）。
+- **尚未产出**：评估聚合、统计检验、图表、论文正文（占位符已就绪）。
+- **机器稳定性**：8/10 起稳定运行 >6h（此前频繁硬冻结）。cron @reboot 已移除（手动恢复）。
 
 ## 4. 快速上手（完整命令在 docs/PIPELINE.md）
 
