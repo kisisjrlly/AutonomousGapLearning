@@ -193,6 +193,65 @@ def fig_episode(rec, task, attempts, env_i, steps_used, out_path):
     plt.close(fig)
 
 
+def fig_risk_calibration(rec, steps_used, out_path, horizon=20):
+    """Evidence-validity: reliability diagram + pre-collision risk rise + risk at aborts."""
+    paper_style()
+    if "risk" not in rec:
+        return
+    T, N = rec["clear"].shape
+    risk, C, ee, eo = rec["risk"], rec["collision"], rec["end_event"], rec["end_outcome"]
+    lab = np.zeros_like(C)
+    for k in range(1, horizon + 1):
+        lab[:-k] = np.maximum(lab[:-k], C[k:])
+    lab = (lab > 0.5).astype(float)
+    fig, axes = plt.subplots(1, 2, figsize=(5.2, 2.1))
+    # reliability diagram
+    ax = axes[0]
+    bins = np.linspace(0, 1, 11)
+    mp, ml, n = [], [], []
+    for i in range(10):
+        m = (risk > bins[i]) & (risk <= bins[i + 1])
+        if m.sum() >= 20:
+            mp.append(risk[m].mean()); ml.append(lab[m].mean()); n.append(m.sum())
+    ax.plot([0, 1], [0, 1], "k--", lw=0.6)
+    ax.plot(mp, ml, color="#2a78d6", lw=1.4, marker="o", ms=3)
+    ax.set_xlabel("Predicted P(collision ≤ 0.5 s)")
+    ax.set_ylabel("Observed frequency")
+    ax.set_title(f"Risk reliability (AUROC {auc(lab, risk):.2f})")
+    ax.grid(True, lw=0.3, alpha=0.35)
+    # pre-collision rise + risk at abort
+    ax = axes[1]
+    ids = np.unique(np.argwhere(C > 0.5)[:, 1])
+    rows = [risk[int(np.argwhere(C[:, e] > 0.5)[0][0]) - horizon:int(np.argwhere(C[:, e] > 0.5)[0][0]) + 1, e]
+            for e in ids if int(np.argwhere(C[:, e] > 0.5)[0][0]) >= horizon]
+    if rows:
+        R = np.stack(rows)
+        xx = np.arange(-horizon, 1)
+        ax.plot(xx, R.mean(0), color="#e34948", lw=1.4, label="before collision")
+    ab = ee & (eo == 0)   # abort events
+    if ab.any():
+        t_ab = np.argwhere(ab)
+        abr = np.array([risk[t, e] for t, e in t_ab[:2000]])
+        ax.scatter(np.random.uniform(-0.4, 0.4, len(abr)), abr, s=6, alpha=0.25,
+                   color="#1baf7a", label="at abort")
+    ax.axhline(risk.mean(), color="#9a9891", lw=0.7, ls=":", label="overall mean")
+    ax.set_xlabel("Steps relative to event")
+    ax.set_ylabel("Predicted risk")
+    ax.set_ylim(0, 1)
+    ax.legend(loc="upper right")
+    ax.grid(True, lw=0.3, alpha=0.35)
+    fig.tight_layout()
+    fig.savefig(out_path)
+    plt.close(fig)
+
+
+def auc(y, p):
+    from numpy import argsort, cumsum, trapz
+    o = argsort(-p); y = y[o]
+    tpr = cumsum(y) / max(y.sum(), 1); fpr = cumsum(1 - y) / max((1 - y).sum(), 1)
+    return float(trapz(tpr, fpr))
+
+
 def fig_bars(groups, out_path, ylabel, ylim=(0, 1), figsize=(3.4, 2.2)):
     """groups: [(group_label, [(variant, val, lo, hi)])] grouped bar chart w/ CI."""
     paper_style()
