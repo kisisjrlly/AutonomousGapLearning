@@ -63,7 +63,8 @@ def run_eval(model, cfg, split, n_tasks, device, wipe_context=False,
     N = n_tasks
     rec = {k: np.zeros((T, N), dtype=np.float32) for k in
            ("clear", "attempt_id", "in_attempt", "end_event", "end_outcome",
-            "success", "collision", "collision_high", "done", "oob", "gave_up")}
+            "success", "collision", "collision_high", "done", "oob", "gave_up",
+            "risk")}
     for k, d in (("p", 3), ("v", 3), ("q", 4), ("act", 4)):
         rec[k] = np.zeros((T, N, d), dtype=np.float32)
     task_np = {k: bank[k].cpu().numpy() for k in
@@ -82,11 +83,15 @@ def run_eval(model, cfg, split, n_tasks, device, wipe_context=False,
     steps_used = np.zeros(N, dtype=np.int64)
     for t in range(T):
         mean, _, _, h_new = model.step(obs["img"], obs["vec"], priv, h)
+        with torch.no_grad():
+            out, _ = model.core(obs["img"], obs["vec"], h)
+            risk = torch.sigmoid(model.aux(out)[:, 1])
         act = mean.clamp(-1, 1)
         rec["p"][t] = env.state["p"].cpu().numpy()
         rec["v"][t] = env.state["v"].cpu().numpy()
         rec["q"][t] = env.state["q"].cpu().numpy()
         rec["act"][t] = act.cpu().numpy()
+        rec["risk"][t] = risk.cpu().numpy()
         if save_frames:
             frames[t] = (obs["img"][:save_frames] * 255).to(torch.uint8).cpu().numpy()
         obs, rew, done, info = env.step(act)

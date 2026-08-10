@@ -23,22 +23,30 @@ adjust, and traverse — without any hand-coded task state machine.
 1. Problem: aerial traversal of *unknown* tight openings requires trial; trials
    risk contact; classical pipelines separate detection/planning/retry logic;
    learning systems usually learn *by* crashing (in sim) and deploy frozen.
-2. Idea: make the safe abort the unit of experience. Meta-train a recurrent
+2. **Framing (evidence-validity)** — see paper/evidence-validity-framing.md:
+   the task command ("pass this gap") does not give the facts; feasibility must be
+   *verified by flight*. Each approach is a measurement query: can proposition
+   P="passable with retained braking margin" be accepted from this view/approach?
+   Accept → commit; reject → safe abort (retreat, re-observe, re-try). The
+   dangerous failure is *false certainty* — treating "looks passable" as
+   "verified passable" (shadow as crack).
+3. Idea: make the safe abort the unit of experience. Meta-train a recurrent
    policy over multi-attempt episodes so cross-attempt memory becomes the
-   adaptation mechanism (Plan A of README §5: weights frozen, behavior adapts).
-3. Result headline (fill from data):
+   evidence-accumulation mechanism (Plan A of README §5: weights frozen,
+   behavior adapts). The policy acts on its own learned risk estimate
+   (risk-feedback: actor conditions on the aux collision probability).
+4. Result headline (fill from data):
    - conditional success rises attempt-over-attempt (k2 > k1, p<…)
    - wiping context at aborts erases the gain (causal evidence)
    - no-memory / reset-trained ablations confirm mechanism
    - abort behavior emerges with margin …, contact rate …, give-up on
      infeasible …
    - OOD splits retain …
-4. Significance: the capability (safe trial-and-retry on unknown gaps) is
-   demonstrably learnable from safely-aborted experience and deployable at
-   trivial compute cost — with the abort mechanism shown to be driven by a
-   learned risk judgment (calibration) and task-specific memory (directional
-   correction / hidden-state probes), independent of the specific training
-   method.
+5. Significance: an aerial agent can learn the *evidence-validity loop* — verify
+   a task proposition before committing momentum, explicitly reject unverified
+   cues (false-certainty avoidance), accumulate evidence across attempts — from
+   its own safely aborted experience, at trivial compute cost (1.49M params,
+   CPU 703 Hz), independent of the specific training method.
 
 ## Figures
 

@@ -134,6 +134,12 @@ def summarize(attempts, episodes, max_k=5):
             [a["min_clear"] for a in att if a["outcome"] == SUCCESS]),
         "giveup_rate_infeasible": _rate([e["gave_up"] for e in infeas]),
         "giveup_rate_feasible": _rate([e["gave_up"] for e in feas]),
+        # false-certainty avoidance (evidence-validity): on infeasible instances,
+        # correct rejection = give up (not crash); accepting the false proposition
+        # "passable" = collision
+        "collision_on_infeasible": _rate([e["collision"] for e in infeas]),
+        "false_certainty_avoidance": _rate([e["gave_up"] for e in infeas])
+        if len(infeas) else float("nan"),
         "attempts_before_giveup_infeasible": _rate(
             [e["n_attempts"] for e in infeas if e["gave_up"]]),
         "success_rate_infeasible_label": _rate([e["success"] for e in infeas]),
@@ -156,6 +162,54 @@ def summarize(attempts, episodes, max_k=5):
         out["align_improve_frac"] = float((p2 < p1).mean())
         out["n_align_pairs"] = len(pairs)
     return out
+
+
+def risk_calibration(rec, steps_used, horizon=20):
+    """Evidence-validity check: is the policy's learned risk estimate usable?
+
+    - AUROC of risk vs collision-within-horizon
+    - mean risk at steps before collisions (should rise monotonically)
+    - mean risk at abort events vs random steps (should be elevated: aborts
+      happen when the risk estimate is high)
+    rec must contain a 'risk' channel (see evaluate.py).
+    """
+    T, N = rec["clear"].shape
+    if "risk" not in rec:
+        return {"error": "no risk channel recorded"}
+    risk, C = rec["risk"], rec["collision"]
+    # horizon label
+    lab = np.zeros_like(C)
+    for k in range(1, horizon + 1):
+        lab[:-k] = np.maximum(lab[:-k], C[k:])
+    lab = (lab > 0.5).astype(float)
+    m = lab.sum() > 0 and (1 - lab).sum() > 0
+    auroc = float("nan")
+    if m:
+        p = risk.ravel(); y = lab.ravel()
+        order = np.argsort(-p); y = y[order]
+        tpr = np.cumsum(y) / max(y.sum(), 1); fpr = np.cumsum(1 - y) / max((1 - y).sum(), 1)
+        auroc = float(np.trapz(tpr, fpr))
+    # pre-collision rise
+    rise = {}
+    ids = np.unique(np.argwhere(C > 0.5)[:, 1])
+    rows = []
+    for e in ids:
+        ct = int(np.argwhere(C[:, e] > 0.5)[0][0])
+        if ct >= horizon:
+            rows.append(risk[ct - horizon:ct + 1, e])
+    if rows:
+        R = np.stack(rows)
+        for off in (horizon, 10, 5, 3, 1, 0):
+            rise[f"-{off}"] = float(R[:, -1 - off].mean())
+    # risk at abort events vs overall
+    ee = rec["end_event"] > 0.5
+    eo = rec["end_outcome"]
+    ab = ee & (eo == ABORT)
+    abort_risk = float(risk[ab].mean()) if ab.any() else float("nan")
+    all_risk = float(risk.mean())
+    return {"auroc_h" + str(horizon): auroc, "pre_collision_rise": rise,
+            "risk_at_abort": abort_risk, "risk_overall": all_risk,
+            "n_collisions": int(ids.size)}
 
 
 def load_and_summarize(npz_path):
