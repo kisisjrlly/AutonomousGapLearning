@@ -231,6 +231,13 @@ class GapEnv:
         rew = rew - r.wall_prox_k * torch.where(
             near_gate, (r.wall_prox_margin - clear).clamp_min(0.0), torch.zeros_like(clear))
         rew = rew - r.smooth_k * (action - self.prev_action).square().sum(-1)
+        # progressive-commitment: approach slow enough to retain the abort option.
+        # In the approach zone, if braking distance exceeds clearance -> penalty.
+        a_brake = (self.task["dyn"]["tmax"] / self.task["dyn"]["mass"] - 9.81).clamp_min(3.0)
+        brake_dist = speed.square() / (2.0 * a_brake) + speed * r.brake_reaction
+        in_approach = x < (self.task["wall_x"] - r.brake_gate)
+        rew = rew - r.brake_k * (in_approach.float()
+                                 * (brake_dist - clear).clamp_min(0.0))
         # soft arena boundary: gentle inward field, task-independent
         over = (st["p"][:, 1].abs() - r.bound_y).clamp_min(0.0) \
             + (st["p"][:, 2] - r.bound_z).clamp_min(0.0) \

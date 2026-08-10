@@ -123,6 +123,12 @@ class RewardCfg:
     bound_z: float = 3.5
     bound_x_back: float = -1.0
     smooth_k: float = 0.01
+    # progressive-commitment shaping: in the approach zone (before the wall),
+    # penalize flying so fast that the braking distance exceeds current clearance
+    # (i.e., losing the safe abort/retreat option). README §3.
+    brake_k: float = 0.3
+    brake_reaction: float = 0.05       # reaction distance = v * this
+    brake_gate: float = 0.3            # active for x < wall_x - gate
     giveup_hover_s: float = 4.0         # measurement: dwell in retry zone => give up
     giveup_speed: float = 0.5
 

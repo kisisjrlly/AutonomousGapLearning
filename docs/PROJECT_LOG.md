@@ -104,3 +104,15 @@
 - **论文概念框架**：新增 paper/evidence-validity-framing.md（command-measurement-action
   的单命题实例化：测量查询=进近→commit/abort；假确定性=把影子当裂缝；评估=避免假确定性）。
 - **已知问题**：test_attempt_state_machine 偶发失败（CUDA 时序），已加固定种子去抖。
+
+## 2026-08-10（文档：明确记录 LLM 思维链为候选技术方案）
+
+- 应用户要求，在项目文档中**明确记录"大语言模型/视觉-语言模型思维链（LLM chain-of-thought）
+  可作为实现本项目的技术方案之一"**（能力为本、方法可替换）：
+  - README §4：能力-手段候选途径清单加入 LLM 思维链（command-measurement-action 分层）；
+  - README §11：训练数据来源加入"LLM 高层决策轨迹可作为示范/先验，或直接作分层控制高层"；
+  - docs/tech-selection.md §11：LLM 思维链方案的定位/接口一致性/已知挑战/与 RL 路径关系；
+  - paper/evidence-validity-framing.md：补充两条候选实现路径（端到端 RL / LLM 思维链）；
+  - HANDOFF.md 北极星注记同步。
+- **训练状态**：应用户要求暂停所有训练（recipe_v3 已启动但立即停止，未继续；用户明确
+  不希望启动训练命令——机器在 GPU 训练下频繁硬死机）。恢复训练需用户明确指示。
