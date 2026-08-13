@@ -116,3 +116,18 @@
   - HANDOFF.md 北极星注记同步。
 - **训练状态**：应用户要求暂停所有训练（recipe_v3 已启动但立即停止，未继续；用户明确
   不希望启动训练命令——机器在 GPU 训练下频繁硬死机）。恢复训练需用户明确指示。
+
+## 2026-08-13（恢复研究管线：recipe_v3 决定性实验续跑）
+
+- **用户明确恢复指令**："请你继续原先的 research pipeline，先不用管 hang 死的问题了"。
+  此前（08-10~08-12）因机器硬死机暂停训练、投入硬件排查（HANG_PROBLEM_SUMMARY.md 交接，
+  挂起 passive 监视器 hang_logger + boot_report.sh）。现按用户指令恢复研究主线。
+- **recipe_v3 决定性实验续跑**（runs/recipe_v3）：风险反馈 actor + 撤退奖励 0.6 +
+  刹停余量惩罚 brake_k 0.3 + 风险时域 coll_horizon 40（1.0s）+ 慢课程 step_up 0.006。
+  checkpoint 完好（iter 50 / 14.7M 步 / seed 1），断点续跑至 150M 总步。
+  判定标准：**n_attempts 是否从 ~1.0 突破**（abort 行为从零涌现）。
+  - 若涌现 → 用 recipe_v3 重跑 full×3 + 4 消融全战役 → eval → summary → 图表 → 论文正文。
+  - 若仍 ~1.0 → 从零涌现路线证伪，转"分层/示范/课程注入退避行为"备选路径（能力为本、方法可替换）。
+- **兼容性确认**：run 创建于 265e79b 但训练时代码含未提交的 brake_k 改动；当前 HEAD
+  （ceb61d5）已含全部改动且 agl/ 工作区干净 → ckpt 可安全续跑。log.csv 历史已备份为
+  runs/recipe_v3/log_resume_backup.csv（trainer resume 会截断重写 CSV 头）。
