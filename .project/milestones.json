@@ -1,0 +1,271 @@
+{
+  "milestones": [
+    {
+      "id": "M0",
+      "name": "Project Initialization",
+      "status": "in_progress",
+      "progress_percent": 85,
+      "start_date": "2026-09-17",
+      "target_date": "2026-09-19",
+      "completion_date": null,
+      "tasks_completed": 2,
+      "tasks_total": 3,
+      "deliverables": [
+        {
+          "name": "Codebase Analysis Report",
+          "status": "completed",
+          "file": ".project/M0_codebase_analysis.md"
+        },
+        {
+          "name": "Project Management Infrastructure",
+          "status": "completed",
+          "file": ".project/"
+        },
+        {
+          "name": "Verification Experiment Scripts",
+          "status": "completed",
+          "files": [
+            "agl/eval/verify_gru_context.py",
+            "agl/eval/analyze_attempts.py",
+            "agl/eval/load_checkpoint.py",
+            "agl/eval/run_verification.sh",
+            "agl/eval/QUICKSTART.md"
+          ]
+        }
+      ],
+      "risks": ["R001", "R002"],
+      "dependencies": [],
+      "tasks": [
+        {
+          "id": "M0.1",
+          "name": "Codebase scanning and architecture analysis",
+          "status": "completed",
+          "completion_date": "2026-09-17"
+        },
+        {
+          "id": "M0.2",
+          "name": "Verification experiment scripts",
+          "status": "completed",
+          "completion_date": "2026-09-18"
+        },
+        {
+          "id": "M0.3",
+          "name": "Documentation refinement",
+          "status": "in_progress"
+        }
+      ]
+    },
+    {
+      "id": "M1",
+      "name": "Baseline Validation",
+      "status": "pending",
+      "progress_percent": 0,
+      "start_date": null,
+      "target_date": "2026-10-03",
+      "completion_date": null,
+      "tasks_completed": 0,
+      "tasks_total": 4,
+      "deliverables": [
+        {
+          "name": "Current Model Performance Report",
+          "status": "pending"
+        },
+        {
+          "name": "GRU Context Usage Analysis",
+          "status": "pending"
+        },
+        {
+          "name": "Attempt Distribution Analysis",
+          "status": "pending"
+        },
+        {
+          "name": "Gap Analysis Report",
+          "status": "pending"
+        }
+      ],
+      "risks": ["R001", "R002"],
+      "dependencies": ["M0"]
+    },
+    {
+      "id": "M2",
+      "name": "Context-Aware Architecture Design",
+      "status": "pending",
+      "progress_percent": 0,
+      "start_date": null,
+      "target_date": "2026-10-17",
+      "completion_date": null,
+      "tasks_completed": 0,
+      "tasks_total": 3,
+      "deliverables": [
+        {
+          "name": "Evidence Extractor Implementation",
+          "status": "pending"
+        },
+        {
+          "name": "Context Adapter Implementation",
+          "status": "pending"
+        },
+        {
+          "name": "Architecture Unit Tests",
+          "status": "pending"
+        }
+      ],
+      "risks": ["R004"],
+      "dependencies": ["M1"]
+    },
+    {
+      "id": "M3",
+      "name": "Phase 1 Training (Basic Skills)",
+      "status": "pending",
+      "progress_percent": 0,
+      "start_date": null,
+      "target_date": "2026-11-17",
+      "completion_date": null,
+      "tasks_completed": 0,
+      "tasks_total": 3,
+      "deliverables": [
+        {
+          "name": "Phase 1 Training Recipe",
+          "status": "pending"
+        },
+        {
+          "name": "Trained Checkpoint (Phase 1)",
+          "status": "pending"
+        },
+        {
+          "name": "Phase 1 Performance Report",
+          "status": "pending"
+        }
+      ],
+      "risks": ["R004"],
+      "dependencies": ["M2"]
+    },
+    {
+      "id": "M4",
+      "name": "Phase 2 Training (Context Learning)",
+      "status": "pending",
+      "progress_percent": 0,
+      "start_date": null,
+      "target_date": "2026-12-17",
+      "completion_date": null,
+      "tasks_completed": 0,
+      "tasks_total": 3,
+      "deliverables": [
+        {
+          "name": "Phase 2 Training Recipe",
+          "status": "pending"
+        },
+        {
+          "name": "Trained Checkpoint (Phase 2)",
+          "status": "pending"
+        },
+        {
+          "name": "Context Learning Validation Report",
+          "status": "pending"
+        }
+      ],
+      "risks": ["R004"],
+      "dependencies": ["M3"]
+    },
+    {
+      "id": "M5",
+      "name": "Phase 3 Training (Zero-Collision)",
+      "status": "pending",
+      "progress_percent": 0,
+      "start_date": null,
+      "target_date": "2027-01-17",
+      "completion_date": null,
+      "tasks_completed": 0,
+      "tasks_total": 4,
+      "deliverables": [
+        {
+          "name": "Safety Layer Implementation",
+          "status": "pending"
+        },
+        {
+          "name": "Phase 3 Training Recipe",
+          "status": "pending"
+        },
+        {
+          "name": "Final Trained Checkpoint",
+          "status": "pending"
+        },
+        {
+          "name": "Zero-Collision Validation Report",
+          "status": "pending"
+        }
+      ],
+      "risks": ["R005"],
+      "dependencies": ["M4"]
+    },
+    {
+      "id": "M6",
+      "name": "Simulation Validation",
+      "status": "pending",
+      "progress_percent": 0,
+      "start_date": null,
+      "target_date": "2027-02-17",
+      "completion_date": null,
+      "tasks_completed": 0,
+      "tasks_total": 3,
+      "deliverables": [
+        {
+          "name": "Historical Replacement Analysis",
+          "status": "pending"
+        },
+        {
+          "name": "Multi-Attempt Success Analysis",
+          "status": "pending"
+        },
+        {
+          "name": "Final Simulation Report",
+          "status": "pending"
+        }
+      ],
+      "risks": [],
+      "dependencies": ["M5"]
+    },
+    {
+      "id": "M7",
+      "name": "Real-Flight Validation",
+      "status": "pending",
+      "progress_percent": 0,
+      "start_date": null,
+      "target_date": "2027-03-17",
+      "completion_date": null,
+      "tasks_completed": 0,
+      "tasks_total": 4,
+      "deliverables": [
+        {
+          "name": "Real-Flight Safety Protocol",
+          "status": "pending"
+        },
+        {
+          "name": "Deployment Package",
+          "status": "pending"
+        },
+        {
+          "name": "Real-Flight Experiment Data",
+          "status": "pending"
+        },
+        {
+          "name": "Final Research Paper",
+          "status": "pending"
+        }
+      ],
+      "risks": ["R003"],
+      "dependencies": ["M6"],
+      "note": "Contingent on hardware repair completion"
+    }
+  ],
+  "summary": {
+    "total_milestones": 8,
+    "completed": 0,
+    "in_progress": 1,
+    "pending": 7,
+    "overall_progress_percent": 12,
+    "estimated_completion": "2027-03-17",
+    "high_risk_milestones": ["M7"],
+    "critical_path": ["M0", "M1", "M2", "M3", "M4", "M5", "M6", "M7"]
+  }
+}

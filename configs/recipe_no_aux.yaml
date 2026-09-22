@@ -1,0 +1,11 @@
+run_name: recipe_no_aux
+model:
+  use_risk_feedback: true
+  use_aux: false
+reward:
+  retreat_reward_k: 0.6
+  brake_k: 0.3
+curriculum:
+  step_up: 0.006
+ppo:
+  coll_horizon: 40

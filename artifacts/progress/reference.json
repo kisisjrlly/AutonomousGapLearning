@@ -1,0 +1,2943 @@
+{
+  "scope": "abstract_oracle_geometry_reference_NOT_flight_validation",
+  "seed": 20260918,
+  "safety": {
+    "radius": 0.16,
+    "margin": 0.03,
+    "position_error": 0.01,
+    "speed": 0.2,
+    "latency": 0.05,
+    "brake_accel": 1.0
+  },
+  "n_tasks": 24,
+  "n_eligible": 24,
+  "summary": {
+    "real": {
+      "n": 24,
+      "successes": 16,
+      "contacts": 0,
+      "interventions": 0,
+      "abstentions": 8
+    },
+    "removed": {
+      "n": 24,
+      "successes": 0,
+      "contacts": 0,
+      "interventions": 0,
+      "abstentions": 24
+    },
+    "swapped": {
+      "n": 24,
+      "successes": 0,
+      "contacts": 0,
+      "interventions": 16,
+      "abstentions": 8
+    }
+  },
+  "tasks": [
+    {
+      "task_id": 0,
+      "task": {
+        "center": -0.22,
+        "width": 0.25
+      },
+      "probe": {
+        "trace": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.4,
+            0.0
+          ],
+          [
+            1.4,
+            0.4
+          ]
+        ],
+        "intervention": false,
+        "min_clearance": 0.5108203932499369,
+        "contact": false,
+        "distance": 1.7999999999999998,
+        "success": false
+      },
+      "retreat_trace": [
+        [
+          1.4,
+          0.4
+        ],
+        [
+          1.4,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "retreat_ok": true,
+      "eligible": true,
+      "branches": {
+        "real": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_certified_margin",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": -0.21619439323931444,
+            "width": 0.25,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        },
+        "removed": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_evidence",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": null
+        },
+        "swapped": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_certified_margin",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": 0.21619439323931444,
+            "width": 0.25,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        }
+      }
+    },
+    {
+      "task_id": 1,
+      "task": {
+        "center": 0.22,
+        "width": 0.52
+      },
+      "probe": {
+        "trace": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.4,
+            0.0
+          ],
+          [
+            1.4,
+            0.4
+          ]
+        ],
+        "intervention": false,
+        "min_clearance": 0.5108203932499369,
+        "contact": false,
+        "distance": 1.7999999999999998,
+        "success": false
+      },
+      "retreat_trace": [
+        [
+          1.4,
+          0.4
+        ],
+        [
+          1.4,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "retreat_ok": true,
+      "eligible": true,
+      "branches": {
+        "real": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.2236826233680609
+            ],
+            [
+              3.0,
+              0.2236826233680609
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": 0.0963173766319391,
+          "contact": false,
+          "distance": 3.223682623368061,
+          "success": true,
+          "decision": "commit",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": 0.2236826233680609,
+            "width": 0.52,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        },
+        "removed": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_evidence",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": null
+        },
+        "swapped": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              -0.2236826233680609
+            ]
+          ],
+          "intervention": true,
+          "min_clearance": 1.8959373150175403,
+          "contact": false,
+          "distance": 0.2236826233680609,
+          "success": false,
+          "decision": "commit",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": -0.2236826233680609,
+            "width": 0.52,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        }
+      }
+    },
+    {
+      "task_id": 2,
+      "task": {
+        "center": -0.22,
+        "width": 0.52
+      },
+      "probe": {
+        "trace": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.4,
+            0.0
+          ],
+          [
+            1.4,
+            0.4
+          ]
+        ],
+        "intervention": false,
+        "min_clearance": 0.5108203932499369,
+        "contact": false,
+        "distance": 1.7999999999999998,
+        "success": false
+      },
+      "retreat_trace": [
+        [
+          1.4,
+          0.4
+        ],
+        [
+          1.4,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "retreat_ok": true,
+      "eligible": true,
+      "branches": {
+        "real": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              -0.2188215205780829
+            ],
+            [
+              3.0,
+              -0.2188215205780829
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": 0.09882152057808294,
+          "contact": false,
+          "distance": 3.218821520578083,
+          "success": true,
+          "decision": "commit",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": -0.2188215205780829,
+            "width": 0.52,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        },
+        "removed": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_evidence",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": null
+        },
+        "swapped": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.2188215205780829
+            ]
+          ],
+          "intervention": true,
+          "min_clearance": 1.8970689655572535,
+          "contact": false,
+          "distance": 0.2188215205780829,
+          "success": false,
+          "decision": "commit",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": 0.2188215205780829,
+            "width": 0.52,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        }
+      }
+    },
+    {
+      "task_id": 3,
+      "task": {
+        "center": 0.22,
+        "width": 0.25
+      },
+      "probe": {
+        "trace": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.4,
+            0.0
+          ],
+          [
+            1.4,
+            0.4
+          ]
+        ],
+        "intervention": false,
+        "min_clearance": 0.5108203932499369,
+        "contact": false,
+        "distance": 1.7999999999999998,
+        "success": false
+      },
+      "retreat_trace": [
+        [
+          1.4,
+          0.4
+        ],
+        [
+          1.4,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "retreat_ok": true,
+      "eligible": true,
+      "branches": {
+        "real": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_certified_margin",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": 0.22498107489993138,
+            "width": 0.25,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        },
+        "removed": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_evidence",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": null
+        },
+        "swapped": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_certified_margin",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": -0.22498107489993138,
+            "width": 0.25,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        }
+      }
+    },
+    {
+      "task_id": 4,
+      "task": {
+        "center": -0.22,
+        "width": 0.52
+      },
+      "probe": {
+        "trace": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.4,
+            0.0
+          ],
+          [
+            1.4,
+            0.4
+          ]
+        ],
+        "intervention": false,
+        "min_clearance": 0.5108203932499369,
+        "contact": false,
+        "distance": 1.7999999999999998,
+        "success": false
+      },
+      "retreat_trace": [
+        [
+          1.4,
+          0.4
+        ],
+        [
+          1.4,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "retreat_ok": true,
+      "eligible": true,
+      "branches": {
+        "real": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              -0.2158422072655551
+            ],
+            [
+              3.0,
+              -0.2158422072655551
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": 0.09584220726555512,
+          "contact": false,
+          "distance": 3.2158422072655553,
+          "success": true,
+          "decision": "commit",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": -0.2158422072655551,
+            "width": 0.52,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        },
+        "removed": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_evidence",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": null
+        },
+        "swapped": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.2158422072655551
+            ]
+          ],
+          "intervention": true,
+          "min_clearance": 1.8977679092321103,
+          "contact": false,
+          "distance": 0.2158422072655551,
+          "success": false,
+          "decision": "commit",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": 0.2158422072655551,
+            "width": 0.52,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        }
+      }
+    },
+    {
+      "task_id": 5,
+      "task": {
+        "center": 0.22,
+        "width": 0.52
+      },
+      "probe": {
+        "trace": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.4,
+            0.0
+          ],
+          [
+            1.4,
+            0.4
+          ]
+        ],
+        "intervention": false,
+        "min_clearance": 0.5108203932499369,
+        "contact": false,
+        "distance": 1.7999999999999998,
+        "success": false
+      },
+      "retreat_trace": [
+        [
+          1.4,
+          0.4
+        ],
+        [
+          1.4,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "retreat_ok": true,
+      "eligible": true,
+      "branches": {
+        "real": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.21852079837180644
+            ],
+            [
+              3.0,
+              0.21852079837180644
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": 0.09852079837180641,
+          "contact": false,
+          "distance": 3.2185207983718063,
+          "success": true,
+          "decision": "commit",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": 0.21852079837180644,
+            "width": 0.52,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        },
+        "removed": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_evidence",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": null
+        },
+        "swapped": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              -0.21852079837180644
+            ]
+          ],
+          "intervention": true,
+          "min_clearance": 1.8971393296518648,
+          "contact": false,
+          "distance": 0.21852079837180644,
+          "success": false,
+          "decision": "commit",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": -0.21852079837180644,
+            "width": 0.52,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        }
+      }
+    },
+    {
+      "task_id": 6,
+      "task": {
+        "center": -0.22,
+        "width": 0.25
+      },
+      "probe": {
+        "trace": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.4,
+            0.0
+          ],
+          [
+            1.4,
+            0.4
+          ]
+        ],
+        "intervention": false,
+        "min_clearance": 0.5108203932499369,
+        "contact": false,
+        "distance": 1.7999999999999998,
+        "success": false
+      },
+      "retreat_trace": [
+        [
+          1.4,
+          0.4
+        ],
+        [
+          1.4,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "retreat_ok": true,
+      "eligible": true,
+      "branches": {
+        "real": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_certified_margin",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": -0.2169648791381452,
+            "width": 0.25,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        },
+        "removed": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_evidence",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": null
+        },
+        "swapped": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_certified_margin",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": 0.2169648791381452,
+            "width": 0.25,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        }
+      }
+    },
+    {
+      "task_id": 7,
+      "task": {
+        "center": 0.22,
+        "width": 0.52
+      },
+      "probe": {
+        "trace": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.4,
+            0.0
+          ],
+          [
+            1.4,
+            0.4
+          ]
+        ],
+        "intervention": false,
+        "min_clearance": 0.5108203932499369,
+        "contact": false,
+        "distance": 1.7999999999999998,
+        "success": false
+      },
+      "retreat_trace": [
+        [
+          1.4,
+          0.4
+        ],
+        [
+          1.4,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "retreat_ok": true,
+      "eligible": true,
+      "branches": {
+        "real": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.21825312187219184
+            ],
+            [
+              3.0,
+              0.21825312187219184
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": 0.09825312187219185,
+          "contact": false,
+          "distance": 3.2182531218721917,
+          "success": true,
+          "decision": "commit",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": 0.21825312187219184,
+            "width": 0.52,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        },
+        "removed": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_evidence",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": null
+        },
+        "swapped": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              -0.21825312187219184
+            ]
+          ],
+          "intervention": true,
+          "min_clearance": 1.8972019965443085,
+          "contact": false,
+          "distance": 0.21825312187219184,
+          "success": false,
+          "decision": "commit",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": -0.21825312187219184,
+            "width": 0.52,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        }
+      }
+    },
+    {
+      "task_id": 8,
+      "task": {
+        "center": -0.22,
+        "width": 0.52
+      },
+      "probe": {
+        "trace": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.4,
+            0.0
+          ],
+          [
+            1.4,
+            0.4
+          ]
+        ],
+        "intervention": false,
+        "min_clearance": 0.5108203932499369,
+        "contact": false,
+        "distance": 1.7999999999999998,
+        "success": false
+      },
+      "retreat_trace": [
+        [
+          1.4,
+          0.4
+        ],
+        [
+          1.4,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "retreat_ok": true,
+      "eligible": true,
+      "branches": {
+        "real": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              -0.22343262334480063
+            ],
+            [
+              3.0,
+              -0.22343262334480063
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": 0.09656737665519935,
+          "contact": false,
+          "distance": 3.2234326233448005,
+          "success": true,
+          "decision": "commit",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": -0.22343262334480063,
+            "width": 0.52,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        },
+        "removed": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_evidence",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": null
+        },
+        "swapped": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.22343262334480063
+            ]
+          ],
+          "intervention": true,
+          "min_clearance": 1.895995249141403,
+          "contact": false,
+          "distance": 0.22343262334480063,
+          "success": false,
+          "decision": "commit",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": 0.22343262334480063,
+            "width": 0.52,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        }
+      }
+    },
+    {
+      "task_id": 9,
+      "task": {
+        "center": 0.22,
+        "width": 0.25
+      },
+      "probe": {
+        "trace": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.4,
+            0.0
+          ],
+          [
+            1.4,
+            0.4
+          ]
+        ],
+        "intervention": false,
+        "min_clearance": 0.5108203932499369,
+        "contact": false,
+        "distance": 1.7999999999999998,
+        "success": false
+      },
+      "retreat_trace": [
+        [
+          1.4,
+          0.4
+        ],
+        [
+          1.4,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "retreat_ok": true,
+      "eligible": true,
+      "branches": {
+        "real": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_certified_margin",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": 0.22327473042445847,
+            "width": 0.25,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        },
+        "removed": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_evidence",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": null
+        },
+        "swapped": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_certified_margin",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": -0.22327473042445847,
+            "width": 0.25,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        }
+      }
+    },
+    {
+      "task_id": 10,
+      "task": {
+        "center": -0.22,
+        "width": 0.52
+      },
+      "probe": {
+        "trace": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.4,
+            0.0
+          ],
+          [
+            1.4,
+            0.4
+          ]
+        ],
+        "intervention": false,
+        "min_clearance": 0.5108203932499369,
+        "contact": false,
+        "distance": 1.7999999999999998,
+        "success": false
+      },
+      "retreat_trace": [
+        [
+          1.4,
+          0.4
+        ],
+        [
+          1.4,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "retreat_ok": true,
+      "eligible": true,
+      "branches": {
+        "real": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              -0.22390437405192595
+            ],
+            [
+              3.0,
+              -0.22390437405192595
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": 0.096095625948074,
+          "contact": false,
+          "distance": 3.223904374051926,
+          "success": true,
+          "decision": "commit",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": -0.22390437405192595,
+            "width": 0.52,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        },
+        "removed": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_evidence",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": null
+        },
+        "swapped": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.22390437405192595
+            ]
+          ],
+          "intervention": true,
+          "min_clearance": 1.8958859513715465,
+          "contact": false,
+          "distance": 0.22390437405192595,
+          "success": false,
+          "decision": "commit",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": 0.22390437405192595,
+            "width": 0.52,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        }
+      }
+    },
+    {
+      "task_id": 11,
+      "task": {
+        "center": 0.22,
+        "width": 0.52
+      },
+      "probe": {
+        "trace": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.4,
+            0.0
+          ],
+          [
+            1.4,
+            0.4
+          ]
+        ],
+        "intervention": false,
+        "min_clearance": 0.5108203932499369,
+        "contact": false,
+        "distance": 1.7999999999999998,
+        "success": false
+      },
+      "retreat_trace": [
+        [
+          1.4,
+          0.4
+        ],
+        [
+          1.4,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "retreat_ok": true,
+      "eligible": true,
+      "branches": {
+        "real": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.22089819352101395
+            ],
+            [
+              3.0,
+              0.22089819352101395
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": 0.09910180647898606,
+          "contact": false,
+          "distance": 3.220898193521014,
+          "success": true,
+          "decision": "commit",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": 0.22089819352101395,
+            "width": 0.52,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        },
+        "removed": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_evidence",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": null
+        },
+        "swapped": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              -0.22089819352101395
+            ]
+          ],
+          "intervention": true,
+          "min_clearance": 1.89658419253174,
+          "contact": false,
+          "distance": 0.22089819352101395,
+          "success": false,
+          "decision": "commit",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": -0.22089819352101395,
+            "width": 0.52,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        }
+      }
+    },
+    {
+      "task_id": 12,
+      "task": {
+        "center": -0.22,
+        "width": 0.25
+      },
+      "probe": {
+        "trace": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.4,
+            0.0
+          ],
+          [
+            1.4,
+            0.4
+          ]
+        ],
+        "intervention": false,
+        "min_clearance": 0.5108203932499369,
+        "contact": false,
+        "distance": 1.7999999999999998,
+        "success": false
+      },
+      "retreat_trace": [
+        [
+          1.4,
+          0.4
+        ],
+        [
+          1.4,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "retreat_ok": true,
+      "eligible": true,
+      "branches": {
+        "real": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_certified_margin",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": -0.22375179155932035,
+            "width": 0.25,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        },
+        "removed": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_evidence",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": null
+        },
+        "swapped": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_certified_margin",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": 0.22375179155932035,
+            "width": 0.25,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        }
+      }
+    },
+    {
+      "task_id": 13,
+      "task": {
+        "center": 0.22,
+        "width": 0.52
+      },
+      "probe": {
+        "trace": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.4,
+            0.0
+          ],
+          [
+            1.4,
+            0.4
+          ]
+        ],
+        "intervention": false,
+        "min_clearance": 0.5108203932499369,
+        "contact": false,
+        "distance": 1.7999999999999998,
+        "success": false
+      },
+      "retreat_trace": [
+        [
+          1.4,
+          0.4
+        ],
+        [
+          1.4,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "retreat_ok": true,
+      "eligible": true,
+      "branches": {
+        "real": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.21717699789928915
+            ],
+            [
+              3.0,
+              0.21717699789928915
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": 0.09717699789928916,
+          "contact": false,
+          "distance": 3.2171769978992892,
+          "success": true,
+          "decision": "commit",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": 0.21717699789928915,
+            "width": 0.52,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        },
+        "removed": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_evidence",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": null
+        },
+        "swapped": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              -0.21717699789928915
+            ]
+          ],
+          "intervention": true,
+          "min_clearance": 1.8974542647061547,
+          "contact": false,
+          "distance": 0.21717699789928915,
+          "success": false,
+          "decision": "commit",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": -0.21717699789928915,
+            "width": 0.52,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        }
+      }
+    },
+    {
+      "task_id": 14,
+      "task": {
+        "center": -0.22,
+        "width": 0.52
+      },
+      "probe": {
+        "trace": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.4,
+            0.0
+          ],
+          [
+            1.4,
+            0.4
+          ]
+        ],
+        "intervention": false,
+        "min_clearance": 0.5108203932499369,
+        "contact": false,
+        "distance": 1.7999999999999998,
+        "success": false
+      },
+      "retreat_trace": [
+        [
+          1.4,
+          0.4
+        ],
+        [
+          1.4,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "retreat_ok": true,
+      "eligible": true,
+      "branches": {
+        "real": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              -0.21639365322541412
+            ],
+            [
+              3.0,
+              -0.21639365322541412
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": 0.09639365322541413,
+          "contact": false,
+          "distance": 3.2163936532254143,
+          "success": true,
+          "decision": "commit",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": -0.21639365322541412,
+            "width": 0.52,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        },
+        "removed": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_evidence",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": null
+        },
+        "swapped": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.21639365322541412
+            ]
+          ],
+          "intervention": true,
+          "min_clearance": 1.8976382331791612,
+          "contact": false,
+          "distance": 0.21639365322541412,
+          "success": false,
+          "decision": "commit",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": 0.21639365322541412,
+            "width": 0.52,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        }
+      }
+    },
+    {
+      "task_id": 15,
+      "task": {
+        "center": 0.22,
+        "width": 0.25
+      },
+      "probe": {
+        "trace": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.4,
+            0.0
+          ],
+          [
+            1.4,
+            0.4
+          ]
+        ],
+        "intervention": false,
+        "min_clearance": 0.5108203932499369,
+        "contact": false,
+        "distance": 1.7999999999999998,
+        "success": false
+      },
+      "retreat_trace": [
+        [
+          1.4,
+          0.4
+        ],
+        [
+          1.4,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "retreat_ok": true,
+      "eligible": true,
+      "branches": {
+        "real": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_certified_margin",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": 0.21836327782582365,
+            "width": 0.25,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        },
+        "removed": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_evidence",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": null
+        },
+        "swapped": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_certified_margin",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": -0.21836327782582365,
+            "width": 0.25,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        }
+      }
+    },
+    {
+      "task_id": 16,
+      "task": {
+        "center": -0.22,
+        "width": 0.52
+      },
+      "probe": {
+        "trace": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.4,
+            0.0
+          ],
+          [
+            1.4,
+            0.4
+          ]
+        ],
+        "intervention": false,
+        "min_clearance": 0.5108203932499369,
+        "contact": false,
+        "distance": 1.7999999999999998,
+        "success": false
+      },
+      "retreat_trace": [
+        [
+          1.4,
+          0.4
+        ],
+        [
+          1.4,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "retreat_ok": true,
+      "eligible": true,
+      "branches": {
+        "real": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              -0.2231778188298069
+            ],
+            [
+              3.0,
+              -0.2231778188298069
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": 0.09682218117019306,
+          "contact": false,
+          "distance": 3.223177818829807,
+          "success": true,
+          "decision": "commit",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": -0.2231778188298069,
+            "width": 0.52,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        },
+        "removed": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_evidence",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": null
+        },
+        "swapped": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.2231778188298069
+            ]
+          ],
+          "intervention": true,
+          "min_clearance": 1.8960543262413816,
+          "contact": false,
+          "distance": 0.2231778188298069,
+          "success": false,
+          "decision": "commit",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": 0.2231778188298069,
+            "width": 0.52,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        }
+      }
+    },
+    {
+      "task_id": 17,
+      "task": {
+        "center": 0.22,
+        "width": 0.52
+      },
+      "probe": {
+        "trace": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.4,
+            0.0
+          ],
+          [
+            1.4,
+            0.4
+          ]
+        ],
+        "intervention": false,
+        "min_clearance": 0.5108203932499369,
+        "contact": false,
+        "distance": 1.7999999999999998,
+        "success": false
+      },
+      "retreat_trace": [
+        [
+          1.4,
+          0.4
+        ],
+        [
+          1.4,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "retreat_ok": true,
+      "eligible": true,
+      "branches": {
+        "real": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.22353933763526715
+            ],
+            [
+              3.0,
+              0.22353933763526715
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": 0.09646066236473286,
+          "contact": false,
+          "distance": 3.223539337635267,
+          "success": true,
+          "decision": "commit",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": 0.22353933763526715,
+            "width": 0.52,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        },
+        "removed": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_evidence",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": null
+        },
+        "swapped": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              -0.22353933763526715
+            ]
+          ],
+          "intervention": true,
+          "min_clearance": 1.8959705160291185,
+          "contact": false,
+          "distance": 0.22353933763526715,
+          "success": false,
+          "decision": "commit",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": -0.22353933763526715,
+            "width": 0.52,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        }
+      }
+    },
+    {
+      "task_id": 18,
+      "task": {
+        "center": -0.22,
+        "width": 0.25
+      },
+      "probe": {
+        "trace": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.4,
+            0.0
+          ],
+          [
+            1.4,
+            0.4
+          ]
+        ],
+        "intervention": false,
+        "min_clearance": 0.5108203932499369,
+        "contact": false,
+        "distance": 1.7999999999999998,
+        "success": false
+      },
+      "retreat_trace": [
+        [
+          1.4,
+          0.4
+        ],
+        [
+          1.4,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "retreat_ok": true,
+      "eligible": true,
+      "branches": {
+        "real": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_certified_margin",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": -0.22210530713448956,
+            "width": 0.25,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        },
+        "removed": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_evidence",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": null
+        },
+        "swapped": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_certified_margin",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": 0.22210530713448956,
+            "width": 0.25,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        }
+      }
+    },
+    {
+      "task_id": 19,
+      "task": {
+        "center": 0.22,
+        "width": 0.52
+      },
+      "probe": {
+        "trace": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.4,
+            0.0
+          ],
+          [
+            1.4,
+            0.4
+          ]
+        ],
+        "intervention": false,
+        "min_clearance": 0.5108203932499369,
+        "contact": false,
+        "distance": 1.7999999999999998,
+        "success": false
+      },
+      "retreat_trace": [
+        [
+          1.4,
+          0.4
+        ],
+        [
+          1.4,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "retreat_ok": true,
+      "eligible": true,
+      "branches": {
+        "real": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.21735318367228523
+            ],
+            [
+              3.0,
+              0.21735318367228523
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": 0.09735318367228521,
+          "contact": false,
+          "distance": 3.217353183672285,
+          "success": true,
+          "decision": "commit",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": 0.21735318367228523,
+            "width": 0.52,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        },
+        "removed": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_evidence",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": null
+        },
+        "swapped": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              -0.21735318367228523
+            ]
+          ],
+          "intervention": true,
+          "min_clearance": 1.8974129263012027,
+          "contact": false,
+          "distance": 0.21735318367228523,
+          "success": false,
+          "decision": "commit",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": -0.21735318367228523,
+            "width": 0.52,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        }
+      }
+    },
+    {
+      "task_id": 20,
+      "task": {
+        "center": -0.22,
+        "width": 0.52
+      },
+      "probe": {
+        "trace": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.4,
+            0.0
+          ],
+          [
+            1.4,
+            0.4
+          ]
+        ],
+        "intervention": false,
+        "min_clearance": 0.5108203932499369,
+        "contact": false,
+        "distance": 1.7999999999999998,
+        "success": false
+      },
+      "retreat_trace": [
+        [
+          1.4,
+          0.4
+        ],
+        [
+          1.4,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "retreat_ok": true,
+      "eligible": true,
+      "branches": {
+        "real": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              -0.2187190994799576
+            ],
+            [
+              3.0,
+              -0.2187190994799576
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": 0.09871909947995763,
+          "contact": false,
+          "distance": 3.2187190994799577,
+          "success": true,
+          "decision": "commit",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": -0.2187190994799576,
+            "width": 0.52,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        },
+        "removed": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_evidence",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": null
+        },
+        "swapped": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.2187190994799576
+            ]
+          ],
+          "intervention": true,
+          "min_clearance": 1.8970929257584312,
+          "contact": false,
+          "distance": 0.2187190994799576,
+          "success": false,
+          "decision": "commit",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": 0.2187190994799576,
+            "width": 0.52,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        }
+      }
+    },
+    {
+      "task_id": 21,
+      "task": {
+        "center": 0.22,
+        "width": 0.25
+      },
+      "probe": {
+        "trace": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.4,
+            0.0
+          ],
+          [
+            1.4,
+            0.4
+          ]
+        ],
+        "intervention": false,
+        "min_clearance": 0.5108203932499369,
+        "contact": false,
+        "distance": 1.7999999999999998,
+        "success": false
+      },
+      "retreat_trace": [
+        [
+          1.4,
+          0.4
+        ],
+        [
+          1.4,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "retreat_ok": true,
+      "eligible": true,
+      "branches": {
+        "real": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_certified_margin",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": 0.2199740464005851,
+            "width": 0.25,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        },
+        "removed": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_evidence",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": null
+        },
+        "swapped": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_certified_margin",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": -0.2199740464005851,
+            "width": 0.25,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        }
+      }
+    },
+    {
+      "task_id": 22,
+      "task": {
+        "center": -0.22,
+        "width": 0.52
+      },
+      "probe": {
+        "trace": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.4,
+            0.0
+          ],
+          [
+            1.4,
+            0.4
+          ]
+        ],
+        "intervention": false,
+        "min_clearance": 0.5108203932499369,
+        "contact": false,
+        "distance": 1.7999999999999998,
+        "success": false
+      },
+      "retreat_trace": [
+        [
+          1.4,
+          0.4
+        ],
+        [
+          1.4,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "retreat_ok": true,
+      "eligible": true,
+      "branches": {
+        "real": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              -0.22221735421150687
+            ],
+            [
+              3.0,
+              -0.22221735421150687
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": 0.09778264578849308,
+          "contact": false,
+          "distance": 3.222217354211507,
+          "success": true,
+          "decision": "commit",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": -0.22221735421150687,
+            "width": 0.52,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        },
+        "removed": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_evidence",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": null
+        },
+        "swapped": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.22221735421150687
+            ]
+          ],
+          "intervention": true,
+          "min_clearance": 1.896277281063197,
+          "contact": false,
+          "distance": 0.22221735421150687,
+          "success": false,
+          "decision": "commit",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": 0.22221735421150687,
+            "width": 0.52,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        }
+      }
+    },
+    {
+      "task_id": 23,
+      "task": {
+        "center": 0.22,
+        "width": 0.52
+      },
+      "probe": {
+        "trace": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.4,
+            0.0
+          ],
+          [
+            1.4,
+            0.4
+          ]
+        ],
+        "intervention": false,
+        "min_clearance": 0.5108203932499369,
+        "contact": false,
+        "distance": 1.7999999999999998,
+        "success": false
+      },
+      "retreat_trace": [
+        [
+          1.4,
+          0.4
+        ],
+        [
+          1.4,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "retreat_ok": true,
+      "eligible": true,
+      "branches": {
+        "real": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.21724394445624773
+            ],
+            [
+              3.0,
+              0.21724394445624773
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": 0.09724394445624776,
+          "contact": false,
+          "distance": 3.2172439444562477,
+          "success": true,
+          "decision": "commit",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": 0.21724394445624773,
+            "width": 0.52,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        },
+        "removed": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          "intervention": false,
+          "min_clearance": null,
+          "contact": false,
+          "distance": 0.0,
+          "success": false,
+          "decision": "insufficient_evidence",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": null
+        },
+        "swapped": {
+          "trace": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              -0.21724394445624773
+            ]
+          ],
+          "intervention": true,
+          "min_clearance": 1.897438555380005,
+          "contact": false,
+          "distance": 0.21724394445624773,
+          "success": false,
+          "decision": "commit",
+          "start": [
+            0.0,
+            0.0
+          ],
+          "evidence": {
+            "center": -0.21724394445624773,
+            "width": 0.52,
+            "center_error": 0.005,
+            "source": "abstract_view_gated_sensor"
+          }
+        }
+      }
+    }
+  ]
+}

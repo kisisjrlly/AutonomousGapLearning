@@ -11,7 +11,10 @@ $PY -m pytest tests/ -q          # 期望 17 passed
 覆盖：四元数/刚体/悬停平衡、SDF 碰撞与净空、可行性标签、渲染可见性、
 attempt 状态机、辅助标签扫描、PPO 端到端冒烟、**穿墙回归**（高速薄墙不隧道）。
 
-## 阶段 1：训练（单卡 RTX 4080，GPU 向量化 3072 环境）
+## 阶段 1：仿真基础技能训练（单卡 RTX 4080，GPU 向量化 3072 环境）
+
+这一阶段训练基础飞行、观测和候选试探行为。**验收标准与真机一致**：未知窄缝、零接触约束、证据收益、历史对照。
+仿真通过后才能进入真机阶段；仿真碰撞率下降不等于满足真机标准。
 
 训练入口：`python3 -m agl.train.train --config <cfg> --run <name> [--total-steps N] [--resume <ckpt>]`
 
@@ -33,7 +36,7 @@ attempt 状态机、辅助标签扫描、PPO 端到端冒烟、**穿墙回归**�
 - **碰撞罚课程化**：λ<0.5 时碰撞罚从 −3/−1.5 退火到 −10/−4（探索脚手架）。
 - **辅助标签**：0.5 s 内碰撞（掩码：窗口内确知才标负例）；本次尝试成败（中止=未成功，绝不=必然碰撞）。
 
-## 阶段 2：评估
+## 阶段 2：仿真机制与安全评估
 
 ```bash
 $PY -m agl.eval.evaluate --ckpt runs/<name>/ckpt_final.pt --out results/<name> \
@@ -47,7 +50,30 @@ $PY -m agl.eval.evaluate --ckpt runs/<name>/ckpt_final.pt --out results/<name> \
 **评估已集成进 `scripts/run_campaign.sh`**（每 run 训练完自动跑；full_s* 额外跑 wipe）。
 独立跑也可用 `scripts/run_evals.sh`。
 
-## 阶段 3：指标与统计
+
+**仿真阶段 1-2 的验收判据**：策略必须在保留测试集（训练分布外）上证明：
+- 面对未知窄缝时，零碰撞、零擦碰、零接触完成试探或主动中止；
+- 第二次尝试相对第一次有可测量的证据收益（对准误差↓或安全裕度↑）；
+- 历史替换对照显示该收益来自经历而非随机波动；
+- 限定 5 次尝试内最终成功率 ≥ 85%（几何可行实例）。
+
+仿真未通过上述标准时，不得进入真机阶段。
+
+## 阶段 3：真机安全闭环（进入前置门槛）
+
+真机实验前先验证悬停、减速、刹停、退回安全区、动作限幅、状态估计异常处理、独立急停和安全层拒绝不可恢复动作。
+测试环境使用软质边界、安全网、桨叶保护和低速限制；任何接触都应暂停实验并重新审查安全边界。
+
+## 阶段 4：真机无碰撞在线适应
+
+每个任务至少记录第一次试探、退出原因、退出时安全裕度、任务记忆、第二次动作及其差异。验收必须同时满足：
+
+- 没有碰撞、擦碰或保护罩接触；
+- 第二次动作变化与第一次获得的任务信息对应且可重复；
+- 相同状态下移除或替换历史会损害适应效果；
+- 证据不足时系统可以安全停住或放弃。
+
+## 阶段 5：指标与统计
 
 ```bash
 $PY -m agl.eval.metrics results/<run>/eval_id.npz ...   # 单文件摘要
@@ -60,7 +86,7 @@ $PY -m agl.analysis.make_paper_data --results results --out results/paper/summar
 - `agl/analysis/stats.py`：bootstrap CI、簇 bootstrap（attempt 按 episode 聚类）、
   双比例 z 检验、配对 bootstrap。
 
-## 阶段 4：图表
+## 阶段 6：图表
 
 ```bash
 $PY -m agl.analysis.make_figures --summary results/paper/summary.json --out paper/figures
@@ -73,10 +99,10 @@ $PY -m agl.analysis.make_figures --summary results/paper/summary.json --out pape
 - fig1_overview：系统/任务/观测示意图
 调色板用已验证的 8 色分类表（figures.py 顶部），实体固定颜色、条件用线型。
 
-## 阶段 5：论文与交付
+## 阶段 7：论文与交付
 
 - `paper/` 下素材：outline.md / intro-draft.md / methods-draft.md / references_verified.json。
-- 写作纪律：所有数字来自 summary.json/log.csv/npz；仿真定位；不违反 HANDOFF 第 6 节铁律。
+- 写作纪律：所有数字来自 summary.json/log.csv/npz 或真机日志；明确区分仿真与真机；不违反 HANDOFF 第 6 节铁律。
 - 交付物：论文正文 + 补充材料 + 图表 + 本套文档更新为完成态 + 提交。
 
 ## 诊断工具
@@ -86,3 +112,6 @@ $PY -m agl.analysis.latency --ckpt runs/full_s1/ckpt_final.pt   # 部署延迟/�
 nvidia-smi -pl 250                                              # 降 GPU 功耗（若死机复发）
 tail -f /var/log/kern.log | grep -iE "segfault|mce|soft lockup|Xid"  # 硬件稳定性
 ```
+
+
+真机阶段的安全闸门、分级流程与验收指标统一见 [REAL_FLIGHT_ADAPTATION.md](REAL_FLIGHT_ADAPTATION.md)。
