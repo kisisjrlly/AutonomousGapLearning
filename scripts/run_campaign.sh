@@ -14,6 +14,18 @@
 # Usage: bash scripts/run_campaign.sh            # 300M steps per run
 #        bash scripts/run_campaign.sh 200000000  # override budget
 set -u
+
+# Legacy recurrent-PPO ablation campaign. Preserve it for reproducibility, but
+# require explicit opt-in so future agents cannot accidentally spend hundreds
+# of millions of steps on the superseded default plan.
+if [[ "${AGL_ALLOW_LEGACY_CAMPAIGN:-0}" != "1" ]]; then
+  echo "LEGACY CAMPAIGN BLOCKED."
+  echo "Current priority: information-gated GapEnv v2 + aligned safety replay + same-state history interventions."
+  echo "To intentionally reproduce the old baseline:"
+  echo "  AGL_ALLOW_LEGACY_CAMPAIGN=1 bash scripts/run_campaign.sh [steps]"
+  exit 2
+fi
+
 STEPS=${1:-300000000}
 PY=/home/zhaoguodong/miniconda3/bin/python3
 CFG_TMP=runs/campaign_cfg.yaml          # repo-relative: survives /tmp cleanup after reboot

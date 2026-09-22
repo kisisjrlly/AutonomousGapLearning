@@ -26,6 +26,7 @@ README.md                 研究纲领（§1–§17，必读）
 docs/tech-selection.md    技术选型与设计决策（仿真器/传感器/动作空间/模型/训练/消融）
 docs/PIPELINE.md          各阶段运行手册（本文件的下游）
 docs/REAL_FLIGHT_ADAPTATION.md  真机无碰撞在线适应与验收规范
+docs/INFO_GATED_GAPENV_V2.md     当前信息门控刚体任务设计与 smoke check
 docs/PROJECT_LOG.md       时间线历史记录
 paper/outline.md          论文结构大纲
 paper/intro-draft.md      Introduction 初稿
@@ -40,6 +41,7 @@ agl/models/policy.py      CNN+GRU 策略、非对称批评家、辅助头
 agl/train/ppo.py          循环 PPO（BPTT、GAE、辅助标签扫描）
 agl/train/train.py        训练入口（rollout 收集 + 课程 + 日志/存档）
 agl/eval/evaluate.py      评估：固定种子任务库、三划分、轨迹记录、上下文清空
+agl/eval/verify_info_gate.py  无训练的成对 latent-wind 环境 smoke check
 agl/eval/metrics.py       README §12 全指标（离线的 attempt 分段 + 统计）
 agl/analysis/stats.py     bootstrap CI / 比例检验 / 配对检验
 agl/analysis/make_paper_data.py  聚合所有 eval → results/paper/summary.json（论文数据源）
@@ -49,7 +51,7 @@ agl/analysis/latency.py   部署延迟基准
 configs/*.yaml            full + 4 消融的配置
 scripts/run_campaign.sh   训练+评估一体化战役（断点续跑+崩溃自恢复）
 scripts/run_evals.sh      独立评估（campaign 已含评估时此脚本备用）
-tests/                    pytest：test_sim.py / test_env_ppo.py（17 项，含穿墙回归）
+tests/                    pytest：仿真/训练/安全回放/信息门控/可视化回归测试
 
 runs/<run>/               log.csv(训练曲线) config.yaml ckpt_latest.pt ckpt_final.pt tb/
 results/<run>/eval_*.npz  评估轨迹（每 episode 逐步记录）
@@ -58,8 +60,9 @@ results/paper/summary.json 论文引用数据的单一来源
 
 ## 3. 当前状态（2026-09-16）
 
-2026-09-18 补充：下一步以 `docs/MINIMAL_SAFE_PROBE_PROTOCOL.md` 为准。
-已有 CPU 抽象几何协议自检，不是飞行验证；旧 `.project/path_comparison.md` 的阈值选型与 90% 无碰撞验收已废止。
+2026-09-22 补充：抽象协议开始迁入真实刚体环境。GapEnv v2 新增默认关闭的 information gate：
+隐藏局部横风只在近墙 probe zone 激活；可生成仅 latent wind 符号不同的严格配对任务。
+旧 PPO campaign 已降级为 legacy baseline。下一步优先完成刚体 probe/retreat 与 same-state history intervention。
 
 - **当前阻塞**：机器在 GPU 满载下频繁硬死机；更关键的是，**仿真策略尚未按真机标准证明零接触安全试探闭环**——
   这是真机实验的必要前提，必须在仿真中先验证通过（未知窄缝、零接触约束、证据收益、历史替换对照）。
@@ -69,8 +72,10 @@ results/paper/summary.json 论文引用数据的单一来源
   已架 **被动 GPU 功耗监视器**（agl/analysis/gpu_watch.py，零负载，每秒记录到 runs/gpu_watch.log，
   @reboot 自动启动）——下次死机时最后一条记录即死机瞬间功耗，用于区分电源 vs 硅片。
   已整理 **docs/HARDWARE_ISSUE.md**（RMA 证据包，建议走 Intel 5 年质保换 CPU）。
-- **待验证的仿真干预**：recipe_v3（risk 反馈 + 撤退奖励 0.6 + 慢课程 + 刹停余量惩罚 brake_k 0.3 +
-  风险时域 0.5s→1s），旨在让"安全掉头再试"从零训练涌现（此前 fresh run 300M 步未涌现）。
+- **旧待验证干预（现为 legacy）**：recipe_v3（risk 反馈 + 撤退奖励 + 慢课程 + 刹停 shaping）。
+  不再把“从零 PPO 涌现 retry”作为默认关键路径；配置保留用于基线和对照。
+- **当前关键路径**：information-gated GapEnv v2 → 刚体安全试探/退出 → paired latent task →
+  same-state correct/removed/swapped history intervention → 再选择模仿/离线 RL/分层策略或 PPO 微调。
 - **已确认基线（full_s1 300M）**：难度 1.0，首尝试 80.7%，碰撞 23%，n_attempts≈1.0（无 abort）。
 - **已就绪（等数据）**：评估管线（含 risk 校准 AUROC 0.978 基线）、聚合 make_paper_data（已验证）、
   图表管线（training/adaptation/bars/episode/overview/risk）、论文占位符（abstract/results/
@@ -82,11 +87,12 @@ results/paper/summary.json 论文引用数据的单一来源
 ```bash
 PY=/home/zhaoguodong/miniconda3/bin/python3   # PATH 里默认 python3 没有 torch！
 
-# 1) 训练+评估战役（若机器重启过，先执行这个恢复）
-nohup bash scripts/run_campaign.sh > runs/campaign.out 2>&1 &
+# 1) 先验证当前代码、信息门控和安全回放
+$PY -m pytest tests/ -q
 
-# 2) 看进度
-tail -f runs/campaign.out
+# 2) 旧 7-run PPO 战役仅作复现基线，默认被脚本阻止
+# AGL_ALLOW_LEGACY_CAMPAIGN=1 nohup bash scripts/run_campaign.sh > runs/campaign.out 2>&1 &
+
 /home/zhaoguodong/miniconda3/bin/python3 - <<'EOF'
 import csv; r=list(csv.DictReader(open('runs/full_s1/log.csv')))[-1]
 print({k:r[k] for k in ('iter','steps','difficulty','succ_ema','ep/success','ep/coll_high')})
@@ -167,7 +173,7 @@ $PY -m pytest tests/ -q
 
 ## 10. 给接手 AI 的嘱咐
 
-1. 先跑通 `$PY -m pytest tests/ -q`（17 passed）确认环境。
+1. 先跑通 `$PY -m pytest tests/ -q` 确认环境。
 2. 用第 4 节命令恢复/查看训练；别动正在写的 runs/* 目录。
 3. 别"优化"已冻结的核心不变量（第 7 节）——尤其别让特权/全局信息进入观测。
 4. 论文写作只引用 summary.json / log.csv / npz 中真实存在的数字。

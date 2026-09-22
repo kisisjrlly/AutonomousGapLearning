@@ -185,3 +185,19 @@ def _default_vis(n):
         "checker": torch.ones(n, device=DEV),
         "px_noise": torch.zeros(n, device=DEV),
     }
+
+
+def test_paired_information_tasks_match_except_latent_sign():
+    cfg = make_cfg(4)
+    cfg.task.info_gate_enabled = True
+    gen = torch.Generator(device=DEV)
+    gen.manual_seed(123)
+    task = scene.paired_information_tasks(2, cfg, 1.0, DEV, gen)
+
+    for a, b in ((0, 1), (2, 3)):
+        for key in ("gap_w", "gap_h", "gap_roll", "wall_x", "thick", "gap_cy", "gap_cz"):
+            assert torch.equal(task[key][a], task[key][b])
+        assert torch.equal(task["dyn"]["wind_steady"][a], task["dyn"]["wind_steady"][b])
+        assert torch.equal(task["vis"]["wall_alb"][a], task["vis"]["wall_alb"][b])
+        assert torch.allclose(task["dyn"]["probe_wind"][a],
+                              -task["dyn"]["probe_wind"][b])

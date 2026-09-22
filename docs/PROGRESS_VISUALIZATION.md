@@ -18,7 +18,8 @@ python3 -m agl.eval.plot_safe_probe --sweep /tmp/agl-sweep.json --out /tmp/agl-s
 python3 -m agl.eval.animate_safe_probe_3d --input artifacts/progress/reference.json --out artifacts/progress/reference-3d.gif
 ```
 
-后续接入 `GapEnv` 后，应使用相同布局增加真实刚体轨迹、子步净空、动作延迟和安全层介入标记。只有那时图才开始反映当前无人机仿真，而不是参考协议。
+抽象参考图仍只用于协议检查；真实 `GapEnv` 轨迹已经可由下节工具回放。下一步可视化重点不再是美化参考动画，
+而是给真实刚体回放叠加 `probe_wind` 激活、`clear_pre`、安全门决定和介入事件。
 
 ## 真实 GapEnv 轨迹回放
 

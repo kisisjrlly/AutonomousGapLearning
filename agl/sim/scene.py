@@ -74,6 +74,16 @@ def sample_tasks(n: int, cfg, difficulty: float, device, gen=None) -> dict:
     wind_dir = _u(n, 0.0, 2 * math.pi, d, gen)
     task["dyn"]["wind_steady"] = torch.stack(
         [wind_mag * wind_dir.cos(), wind_mag * wind_dir.sin(), torch.zeros(n, device=d)], dim=-1)
+    # Optional latent disturbance used by GapEnv v2. It is zero when disabled
+    # and is only activated near the wall by env.py, so it cannot be inferred
+    # from the initial state alone.
+    probe_wind = torch.zeros(n, 3, device=d)
+    if getattr(t, "info_gate_enabled", False):
+        mag = _u(n, 0.8 * t.info_probe_wind, 1.2 * t.info_probe_wind, d, gen)
+        sign = torch.where(torch.rand(n, device=d, generator=gen) < 0.5,
+                           -torch.ones(n, device=d), torch.ones(n, device=d))
+        probe_wind[:, 1] = sign * mag
+    task["dyn"]["probe_wind"] = probe_wind
     # visual randomization
     task["vis"] = {
         "wall_alb": _u(n, 0.15, 0.85, d, gen).unsqueeze(-1) * torch.ones(1, 3, device=d)
@@ -96,6 +106,36 @@ def sample_tasks(n: int, cfg, difficulty: float, device, gen=None) -> dict:
         "acc_bias": cfg.sensor.acc_bias * torch.randn(n, 3, device=d, generator=gen),
     }
     return task
+
+
+def paired_information_tasks(n_pairs: int, cfg, difficulty: float, device, gen=None) -> dict:
+    """Create matched task pairs differing only in the latent probe-wind sign.
+
+    Row order is [pair0+, pair0-, pair1+, pair1-, ...]. Every tensor-valued
+    field is duplicated exactly before probe_wind is overwritten, so geometry,
+    visuals, base dynamics and sensor biases are matched within each pair.
+    """
+    if n_pairs <= 0:
+        raise ValueError("n_pairs must be positive")
+    if not getattr(cfg.task, "info_gate_enabled", False):
+        raise ValueError("info_gate_enabled must be True for paired tasks")
+    base = sample_tasks(n_pairs, cfg, difficulty, device, gen)
+
+    def repeat(v):
+        if isinstance(v, dict):
+            return {k: repeat(x) for k, x in v.items()}
+        if torch.is_tensor(v):
+            return v.repeat_interleave(2, dim=0)
+        return v
+
+    out = repeat(base)
+    magnitude = base["dyn"]["probe_wind"][:, 1].abs().repeat_interleave(2)
+    sign = torch.tensor([1.0, -1.0], device=device).repeat(n_pairs)
+    out["dyn"]["probe_wind"].zero_()
+    out["dyn"]["probe_wind"][:, 1] = magnitude * sign
+    # Keep the exact sample_tasks schema so scatter_tasks() can inject this
+    # bank directly into an existing GapEnv. Pair identity is encoded by order.
+    return out
 
 
 def scatter_tasks(dst: dict, src: dict, idx: torch.Tensor):
