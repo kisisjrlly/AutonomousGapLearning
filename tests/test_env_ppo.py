@@ -177,3 +177,25 @@ def test_substep_collision_no_tunneling():
     _, _, done, info = env.step(a)
     assert info["collision"].all() and done.all()
     assert info["collision_high"].all()  # 14 m/s is far above soft threshold
+
+
+def test_information_gate_local_wind_is_latent_until_probe_zone():
+    """Matched hidden disturbances are absent far away and appear only near wall."""
+    cfg = small_cfg(2)
+    cfg.task.info_gate_enabled = True
+    cfg.task.info_probe_distance = 1.0
+    cfg.task.info_probe_ramp = 0.25
+    env = GapEnv(cfg, DEV, difficulty=1.0)
+    env.task["dyn"]["wind_steady"].zero_()
+    env.task["dyn"]["probe_wind"][:] = torch.tensor(
+        [[0.0, 1.0, 0.0], [0.0, -1.0, 0.0]], device=DEV)
+    env.task["wall_x"][:] = 3.0
+
+    env.state["p"][:] = torch.tensor([0.5, 0.0, 1.5], device=DEV)
+    far = env._effective_wind_steady()
+    assert torch.allclose(far, torch.zeros_like(far))
+
+    env.state["p"][:, 0] = 2.3
+    near = env._effective_wind_steady()
+    assert torch.allclose(near[:, 1], torch.tensor([1.0, -1.0], device=DEV))
+    assert torch.allclose(near[:, (0, 2)], torch.zeros(2, 2, device=DEV))
