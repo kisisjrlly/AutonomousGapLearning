@@ -58,7 +58,7 @@ hover 控制后，pair 的横向速度应产生可测分叉。这个检查只验
    `agl.eval.same_state_intervention` 已提供相同初态/匹配任务的分支快照准备，尚未注入策略历史。
    `GapEnv.snapshot()/restore()` 现在覆盖任务、物理状态、延迟队列、观测偏置、frame、尝试 bookkeeping 和 Torch RNG；确定性回放测试通过后，才允许进入三分支 history intervention。
    probe 快照准备现在逐步检查 `done/collision` 和最小净空；一旦发生终止、自动 reset 或接触，工具直接失败，不保存 post-probe 结果。
-   `agl.eval.safe_probe_retreat` 提供真实 CTBR 刚体 rollout，但目前只是开环指令序列：`stop` 是悬停推力而非速度闭环，backward-pitch retreat 结束时尚未停稳。`safe_count` 仅表示记录区间无接触且未终止，不能作为恢复状态、安全控制器或完整协议的验收。`protocol_completed` 明确为 false。
+   旧开环实现已移至 `agl.eval.legacy_open_loop_probe_retreat`，`safe_probe_retreat` 仅保留弃用兼容入口；当前受控恢复基线是 `agl.eval.closed_loop_probe` 的非零速度 dynamic braking 版本。
 2. 保存 post-retreat 物理 snapshot；
 3. 从同一 snapshot 分支 correct / removed / swapped history；
 4. 将短期状态估计 memory 与跨尝试 task memory 分离，避免简单 GRU wipe 的混杂；
@@ -75,3 +75,26 @@ hover 控制后，pair 的横向速度应产生可测分叉。这个检查只验
 ```
 
 因此旧 NPZ 缺少 `rec_clear_pre` 时必须重新评估，禁止插值或错位补算。
+
+
+## 当前执行基线（dynamic braking v2）
+
+当前推荐入口是：
+
+```bash
+python3 -m agl.eval.closed_loop_probe --out artifacts/progress/dynamic-brake-check
+```
+
+该基线使用仿真真值反馈，不是学习策略。与旧版本不同，它以非零 x 速度进入 information gate，
+到近墙触发面后实际制动，再撤退并停稳；验收记录 brake-entry speed、stopping distance、最小净空、
+阶段峰值速度以及最终速度/角速度。只有全部环境完成恢复门槛后才保存 `recovery.pt`。
+
+随后严格 same-state 基础检查使用完整 recovery snapshot：
+
+```bash
+python3 -m agl.eval.same_state_intervention \
+  --recovery artifacts/progress/dynamic-brake-check/recovery.pt \
+  --out /tmp/same-state
+```
+
+这一步只证明未来三个 history 分支能从完整相同环境和相同第一帧观测出发，尚未注入 GRU/task memory。

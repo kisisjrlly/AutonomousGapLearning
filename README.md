@@ -8,8 +8,9 @@
 >
 > 默认分支：`main`
 >
-> 当前开发重点（2026-09-22）：information-gated GapEnv v2、刚体安全退出、same-state history intervention，
-> 以及可审计的 GapEnv 3D/ego-camera 行为回放。旧 7-run PPO campaign 仅保留为 legacy baseline。
+> 当前开发重点（2026-09-22）：information-gated GapEnv v2、**非零速度近场 dynamic braking → retreat → settle**、
+> 完整 snapshot 的 same-state branch foundation，以及可审计的 GapEnv 3D/ego-camera/actor-observation 回放。
+> 旧 7-run PPO campaign 与旧 open-loop retreat 均仅保留为 legacy baseline/negative example。
 >
 > **可视化入口**：`docs/VISUALIZATION_STACK.md`。安装 `requirements-viz.txt` 后可直接把真实
 > `eval_*.npz` 或 `ckpt_latest.pt` 打开到 Rerun Viewer，不再只靠指标和 GIF 猜策略行为。

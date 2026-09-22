@@ -1,6 +1,6 @@
 # HANDOFF — 项目交接索引（给任何后续 AI / 协作者）
 
-> 2026-09-22 复审更新：先读 [当日实现评审](docs/REVIEW_20260922.md)。旧 safe_probe_retreat 是开环反例；新 closed_loop_probe 是仿真真值反馈基线，28 个受控环境完成恢复验收，48 项测试通过。尚无学习重试/穿缝/真机结果，禁止沿用“已实现安全学习闭环”的说法。
+> 2026-09-22 最新复审：先读 [当日实现评审](docs/REVIEW_20260922.md)。旧 `safe_probe_retreat` 已降级为 legacy negative example；当前 `closed_loop_probe` 已改为**非零速度近场 approach → dynamic brake → retreat → settle**，并记录 ego RGB/actor obs。此前“28 个环境/48 tests”仅属于 fbcd489 的旧 waypoint-recovery 版本，不能继承到本版；本版必须由本地重新测试后再记录数字。尚无学习重试/穿缝/真机结果。
 
 > 本文件是**唯一入口**。任何 AI（codex、另一 Claude 会话等）接手本项目时，请先完整阅读本文件，
 > 再按需阅读 `docs/PIPELINE.md`（运行手册）、`docs/PROJECT_LOG.md`（历史记录）、
@@ -45,6 +45,9 @@ agl/train/ppo.py          循环 PPO（BPTT、GAE、辅助标签扫描）
 agl/train/train.py        训练入口（rollout 收集 + 课程 + 日志/存档）
 agl/eval/evaluate.py      评估：固定种子任务库、三划分、轨迹记录、上下文清空
 agl/eval/verify_info_gate.py  无训练的成对 latent-wind 环境 smoke check
+agl/eval/verify_sensor_information.py  hidden wind 是否真正进入 actor 可见观测的结构性检查
+agl/eval/closed_loop_probe.py  当前非零速度动态制动/撤退真值反馈基线
+agl/eval/legacy_open_loop_probe_retreat.py  旧开环反例，仅用于回归/复现错误
 agl/eval/view_eval_rerun.py    打开真实 eval NPZ 的交互式 3D/ego/telemetry 回放
 agl/eval/view_checkpoint_rerun.py  固定验证任务上的 checkpoint 行为监视
 agl/viz/                 依赖隔离的可视化数据模型与 Rerun backend
@@ -70,8 +73,9 @@ results/paper/summary.json 论文引用数据的单一来源
 2026-09-22 补充：抽象协议开始迁入真实刚体环境。GapEnv v2 新增默认关闭的 information gate：
 隐藏局部横风只在近墙 probe zone 激活；可生成仅 latent wind 符号不同的严格配对任务。
 旧 PPO campaign 已降级为 legacy baseline。已加入独立 Rerun 可视化层，真实 eval/checkpoint 可直接观察
-3D 姿态、轨迹、ego RGB、clearance/risk/attempt 和 information-gate probe zone。下一步优先完成
-刚体 probe/retreat 与 same-state history intervention，并把 safety/history 事件继续叠加到同一 Viewer。
+3D 姿态、轨迹、ego RGB、actor obs、clearance/risk/attempt、information-gate 与 brake trigger。
+当前先本地验证 dynamic-braking v2、可配置 camera latency 和严格 recovery snapshot，再进入真正 history injection；
+predictive safety shield 与 learned retry 仍未实现。
 
 - **当前阻塞**：机器在 GPU 满载下频繁硬死机；更关键的是，**仿真策略尚未按真机标准证明零接触安全试探闭环**——
   这是真机实验的必要前提，必须在仿真中先验证通过（未知窄缝、零接触约束、证据收益、历史替换对照）。
@@ -96,8 +100,19 @@ results/paper/summary.json 论文引用数据的单一来源
 ```bash
 PY=/home/zhaoguodong/miniconda3/bin/python3   # PATH 里默认 python3 没有 torch！
 
-# 1) 先验证当前代码、信息门控和安全回放
+# 1) 先验证当前代码
 $PY -m pytest tests/ -q
+
+# 1a) 验证 hidden task evidence 确实进入 actor 可见传感器
+$PY -m agl.eval.verify_sensor_information --pairs 8 --steps 20
+
+# 1b) 运行当前 dynamic-braking recovery baseline（数值必须重新生成）
+$PY -m agl.eval.closed_loop_probe --pairs 2 --seed 0 --out /tmp/agl-dynamic-brake
+
+# 1c) 只在 1b protocol_completed=true 后检查严格 same-state 分支起点
+$PY -m agl.eval.same_state_intervention \
+  --recovery /tmp/agl-dynamic-brake/recovery.pt \
+  --out /tmp/agl-same-state
 
 # 2) 旧 7-run PPO 战役仅作复现基线，默认被脚本阻止
 # AGL_ALLOW_LEGACY_CAMPAIGN=1 nohup bash scripts/run_campaign.sh > runs/campaign.out 2>&1 &

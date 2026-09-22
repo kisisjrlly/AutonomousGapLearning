@@ -41,6 +41,14 @@ def _phase_color(phase):
         return [38, 139, 82]
     if phase == "GIVE_UP":
         return [120, 85, 170]
+    if phase.startswith("APPROACH_PROBE"):
+        return [230, 140, 40]
+    if phase.startswith("BRAKE"):
+        return [220, 75, 65]
+    if phase.startswith("RETREAT"):
+        return [65, 135, 210]
+    if phase.startswith("SETTLED"):
+        return [38, 139, 82]
     if phase.startswith("ATTEMPT"):
         return [230, 140, 40]
     return [70, 125, 180]
@@ -118,6 +126,18 @@ def _log_static(rr, ep: EvalEpisode):
                 [rect_yz(start, y0, y1, .2, z1), rect_yz(active, y0, y1, .2, z1)],
                 colors=[[235,180,40], [235,180,40]],
                 radii=[0.012, 0.012],
+            ),
+            static=True,
+        )
+
+    if "probe_wall_distance" in meta:
+        brake_x = wx - float(meta["probe_wall_distance"])
+        rr.log(
+            "world/planes/brake_trigger",
+            rr.LineStrips3D(
+                [rect_yz(brake_x, y0, y1, .2, z1)],
+                colors=[[220,75,65]],
+                radii=[0.015],
             ),
             static=True,
         )
@@ -215,6 +235,12 @@ def log_episode(ep: EvalEpisode, out: str | Path | None = None, spawn: bool = Fa
 
         if ep.frames is not None:
             rr.log("sensors/ego_rgb", rr.Image(ep.frames[i]))
+        if "obs_vec" in ep.rec:
+            labels = ep.meta.get("obs_vec_labels") or [
+                f"channel_{j}" for j in range(ep.rec["obs_vec"].shape[-1])
+            ]
+            for j, label in enumerate(labels):
+                rr.log(f"sensors/obs_vec/{label}", rr.Scalars(float(ep.rec["obs_vec"][i, j])))
 
         if phase != last_phase or ("end_event" in ep.rec and bool(ep.rec["end_event"][i])):
             rr.log(

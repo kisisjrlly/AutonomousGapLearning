@@ -201,3 +201,21 @@
 - 旧 Matplotlib GIF 保留为无额外依赖 fallback；safe-probe reference 动画继续明确为协议示意，不是学习结果。
 - 下一步：在同一 Viewer 叠加 6-DoF safety gate、probe→stop→retreat phase 与
   correct/removed/swapped history ghost trajectories。
+
+
+## 2026-09-22（dynamic braking v2 + 严格观测历史基础）
+
+- 将 `safe_probe_retreat.py` 降级为兼容入口，旧固定 hover/pitch 实现移至
+  `legacy_open_loop_probe_retreat.py`，防止再次被误称为安全恢复基线。
+- 重写 `closed_loop_probe.py`：以非零前向速度进入 fully-active information zone，在固定近墙触发面
+  开始真实 feedback braking，测 brake-entry speed / stopping distance / peak speed，再 retreat 并停稳；
+  只有完整通过才保存 recovery snapshot。
+- trajectory 同步记录 ego RGB 与 actor 18-D observation vector，Rerun 增加 BRAKE/RETREAT 颜色、
+  brake-trigger plane 和 obs-vector 时间序列。
+- `same_state_intervention.py` 改为只接受完整验收 `recovery.pt`，验证三个未来 history branch 的
+  environment state、latency buffers、RNG 与第一帧 observation 完全一致；仍未注入 policy history。
+- 修复 `sensor.img_delay_steps`：新增真实 image-latency ring buffer，并纳入 snapshot/restore。
+- 新增 `verify_sensor_information.py`：在无观测噪声结构性条件下验证 gate 外 paired actor observation
+  一致、gate 内 hidden wind 只经真实动力学导致 actor observation 分叉。
+- 新增 raw artifact ignore 规则，未来不再把每轮 trajectory/recovery tensor 持续塞进 Git 历史。
+- 本提交不继承旧 fbcd489 的 28-env/48-test 数值；必须由本地拉取后重新运行测试和 dynamic baseline。

@@ -42,7 +42,13 @@ class GapEnv:
         self.ep_min_clear = torch.full((n,), 10.0, device=self.dev)
         self.prev_dist = z1()
         self.prev_x = z1()
+        if cfg.sensor.img_delay_steps < 0:
+            raise ValueError("sensor.img_delay_steps must be non-negative")
         self.frame = torch.zeros(n, 3, cfg.sensor.img_h, cfg.sensor.img_w, device=self.dev)
+        self.frame_delay_buf = torch.zeros(
+            n, cfg.sensor.img_delay_steps + 1, 3, cfg.sensor.img_h, cfg.sensor.img_w,
+            device=self.dev)
+        self.frame_buf_ptr = 0
         self._reset_envs(torch.arange(n, device=self.dev))
 
     # ------------------------------------------------------------------ reset
@@ -79,8 +85,10 @@ class GapEnv:
         self.ep_min_clear[idx] = 10.0
         self.prev_dist[idx] = (self.state["p"][idx] - self._target()[idx]).norm(dim=-1)
         self.prev_x[idx] = self.state["p"][idx][:, 0]
-        self.frame[idx] = render.render(self.state["p"][idx], self.state["q"][idx],
-                                        self._task_slice(idx), self.rays, cfg.sensor)
+        fresh = render.render(self.state["p"][idx], self.state["q"][idx],
+                              self._task_slice(idx), self.rays, cfg.sensor)
+        self.frame[idx] = fresh
+        self.frame_delay_buf[idx] = fresh.unsqueeze(1)
 
     def snapshot(self):
         """Capture all mutable environment state needed for deterministic replay.
@@ -107,6 +115,8 @@ class GapEnv:
             "attempt_depth": self.attempt_depth.clone(), "retry_dwell": self.retry_dwell.clone(),
             "ep_min_clear": self.ep_min_clear.clone(), "prev_dist": self.prev_dist.clone(),
             "prev_x": self.prev_x.clone(), "frame": self.frame.clone(),
+            "frame_delay_buf": self.frame_delay_buf.clone(),
+            "frame_buf_ptr": int(self.frame_buf_ptr),
             "rng_cpu": torch.get_rng_state(),
         }
         if self.dev.type == "cuda":
@@ -134,9 +144,10 @@ class GapEnv:
         restore_tree(self.state, snapshot["state"])
         for name in ("prev_action", "delay_buf", "v_bias", "z_bias", "t_step",
                      "attempts", "in_attempt", "attempt_depth", "retry_dwell",
-                     "ep_min_clear", "prev_dist", "prev_x", "frame"):
+                     "ep_min_clear", "prev_dist", "prev_x", "frame", "frame_delay_buf"):
             getattr(self, name).copy_(snapshot[name])
         self.buf_ptr = int(snapshot["buf_ptr"])
+        self.frame_buf_ptr = int(snapshot.get("frame_buf_ptr", self.frame_buf_ptr))
         self.difficulty = snapshot.get("difficulty", self.difficulty)
         torch.set_rng_state(snapshot["rng_cpu"])
         if self.dev.type == "cuda":
@@ -370,11 +381,17 @@ class GapEnv:
         else:
             clear2 = clear
         info["priv"] = self.privileged(clear2)
-        obs = self.observe()
-        # refresh delayed frame for non-reset envs
+        # Explicit configurable image-latency queue. With delay=0 the next
+        # observation sees the post-step render; with delay=1 (the historical
+        # default) it sees the previous control-step image.
         live = ~done
         if live.any():
             li = live.nonzero(as_tuple=False).squeeze(-1)
-            self.frame[li] = render.render(st["p"][li], st["q"][li],
-                                           self._task_slice(li), self.rays, cfg.sensor)
+            fresh = render.render(st["p"][li], st["q"][li],
+                                  self._task_slice(li), self.rays, cfg.sensor)
+            self.frame_delay_buf[li, self.frame_buf_ptr] = fresh
+            sel = (self.frame_buf_ptr - cfg.sensor.img_delay_steps) % self.frame_delay_buf.shape[1]
+            self.frame[li] = self.frame_delay_buf[li, sel]
+        self.frame_buf_ptr = (self.frame_buf_ptr + 1) % self.frame_delay_buf.shape[1]
+        obs = self.observe()
         return obs, rew, done, info
