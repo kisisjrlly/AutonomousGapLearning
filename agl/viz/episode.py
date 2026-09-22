@@ -88,7 +88,7 @@ def load_eval_episode(path, task_id: int = 0) -> EvalEpisode:
     rec = {}
     for key in ("p", "v", "q", "act", "clear", "clear_pre", "attempt_id",
                 "in_attempt", "end_event", "end_outcome", "success", "collision",
-                "collision_high", "done", "oob", "gave_up", "risk", "phase"):
+                "collision_high", "done", "oob", "gave_up", "risk", "phase", "obs_vec"):
         npz_key = f"rec_{key}"
         if npz_key in d:
             rec[key] = np.asarray(d[npz_key][:steps, task_id])
