@@ -1,3 +1,4 @@
+import pytest
 import json
 
 import numpy as np
@@ -62,3 +63,14 @@ def test_geometry_helpers():
     assert np.allclose(outline[0], outline[-1])
     pts = np.array([[1., 0., 0.]])
     assert np.allclose(quat_rotate_wxyz(np.array([1.,0.,0.,0.]), pts), pts)
+
+
+def test_eval_episode_rejects_zero_length_task(tmp_path):
+    path = tmp_path / "eval-empty.npz"
+    _fake_eval(path)
+    with np.load(path) as d:
+        data = {k: d[k] for k in d.files}
+    data["steps"] = np.array([0, 5])
+    np.savez_compressed(path, **data)
+    with pytest.raises(ValueError, match="no valid recorded steps"):
+        load_eval_episode(path, 0)
