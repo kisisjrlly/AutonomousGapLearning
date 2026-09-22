@@ -58,8 +58,9 @@ results/paper/summary.json 论文引用数据的单一来源
 
 ## 3. 当前状态（2026-09-16）
 
-2026-09-18 补充：下一步以 `docs/MINIMAL_SAFE_PROBE_PROTOCOL.md` 为准。
-已有 CPU 抽象几何协议自检，不是飞行验证；旧 `.project/path_comparison.md` 的阈值选型与 90% 无碰撞验收已废止。
+2026-09-22 补充：抽象协议开始迁入真实刚体环境。GapEnv v2 新增默认关闭的 information gate：
+隐藏局部横风只在近墙 probe zone 激活；可生成仅 latent wind 符号不同的严格配对任务。
+旧 PPO campaign 已降级为 legacy baseline。下一步优先完成刚体 probe/retreat 与 same-state history intervention。
 
 - **当前阻塞**：机器在 GPU 满载下频繁硬死机；更关键的是，**仿真策略尚未按真机标准证明零接触安全试探闭环**——
   这是真机实验的必要前提，必须在仿真中先验证通过（未知窄缝、零接触约束、证据收益、历史替换对照）。
@@ -69,8 +70,10 @@ results/paper/summary.json 论文引用数据的单一来源
   已架 **被动 GPU 功耗监视器**（agl/analysis/gpu_watch.py，零负载，每秒记录到 runs/gpu_watch.log，
   @reboot 自动启动）——下次死机时最后一条记录即死机瞬间功耗，用于区分电源 vs 硅片。
   已整理 **docs/HARDWARE_ISSUE.md**（RMA 证据包，建议走 Intel 5 年质保换 CPU）。
-- **待验证的仿真干预**：recipe_v3（risk 反馈 + 撤退奖励 0.6 + 慢课程 + 刹停余量惩罚 brake_k 0.3 +
-  风险时域 0.5s→1s），旨在让"安全掉头再试"从零训练涌现（此前 fresh run 300M 步未涌现）。
+- **旧待验证干预（现为 legacy）**：recipe_v3（risk 反馈 + 撤退奖励 + 慢课程 + 刹停 shaping）。
+  不再把“从零 PPO 涌现 retry”作为默认关键路径；配置保留用于基线和对照。
+- **当前关键路径**：information-gated GapEnv v2 → 刚体安全试探/退出 → paired latent task →
+  same-state correct/removed/swapped history intervention → 再选择模仿/离线 RL/分层策略或 PPO 微调。
 - **已确认基线（full_s1 300M）**：难度 1.0，首尝试 80.7%，碰撞 23%，n_attempts≈1.0（无 abort）。
 - **已就绪（等数据）**：评估管线（含 risk 校准 AUROC 0.978 基线）、聚合 make_paper_data（已验证）、
   图表管线（training/adaptation/bars/episode/overview/risk）、论文占位符（abstract/results/
@@ -82,11 +85,12 @@ results/paper/summary.json 论文引用数据的单一来源
 ```bash
 PY=/home/zhaoguodong/miniconda3/bin/python3   # PATH 里默认 python3 没有 torch！
 
-# 1) 训练+评估战役（若机器重启过，先执行这个恢复）
-nohup bash scripts/run_campaign.sh > runs/campaign.out 2>&1 &
+# 1) 先验证当前代码、信息门控和安全回放
+$PY -m pytest tests/ -q
 
-# 2) 看进度
-tail -f runs/campaign.out
+# 2) 旧 7-run PPO 战役仅作复现基线，默认被脚本阻止
+# AGL_ALLOW_LEGACY_CAMPAIGN=1 nohup bash scripts/run_campaign.sh > runs/campaign.out 2>&1 &
+
 /home/zhaoguodong/miniconda3/bin/python3 - <<'EOF'
 import csv; r=list(csv.DictReader(open('runs/full_s1/log.csv')))[-1]
 print({k:r[k] for k in ('iter','steps','difficulty','succ_ema','ep/success','ep/coll_high')})
