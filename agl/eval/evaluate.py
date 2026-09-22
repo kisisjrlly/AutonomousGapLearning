@@ -19,7 +19,7 @@ import torch
 
 from ..config import load_config, Config
 from ..models.policy import Policy
-from ..sim import scene
+from ..sim import scene, collision
 from ..sim.env import GapEnv, OUTCOME
 
 
@@ -62,7 +62,7 @@ def run_eval(model, cfg, split, n_tasks, device, wipe_context=False,
     T = ecfg.sim.ep_len + 2
     N = n_tasks
     rec = {k: np.zeros((T, N), dtype=np.float32) for k in
-           ("clear", "attempt_id", "in_attempt", "end_event", "end_outcome",
+           ("clear", "clear_pre", "attempt_id", "in_attempt", "end_event", "end_outcome",
             "success", "collision", "collision_high", "done", "oob", "gave_up",
             "risk")}
     for k, d in (("p", 3), ("v", 3), ("q", 4), ("act", 4)):
@@ -82,6 +82,11 @@ def run_eval(model, cfg, split, n_tasks, device, wipe_context=False,
     finished = torch.zeros(N, dtype=torch.bool, device=device)
     steps_used = np.zeros(N, dtype=np.int64)
     for t in range(T):
+        # State-aligned clearance BEFORE action t. rec["clear"] remains the
+        # minimum substep clearance observed while executing action t.
+        clear_pre = collision.clearance(env.state["p"], env.state["q"], env.task,
+                                        env.bpts, ecfg.sim.arena_y, ecfg.sim.arena_z)
+        rec["clear_pre"][t] = clear_pre.cpu().numpy()
         mean, _, _, h_new = model.step(obs["img"], obs["vec"], priv, h)
         with torch.no_grad():
             out, _ = model.core(obs["img"], obs["vec"], h)
