@@ -108,6 +108,36 @@ def sample_tasks(n: int, cfg, difficulty: float, device, gen=None) -> dict:
     return task
 
 
+def paired_information_tasks(n_pairs: int, cfg, difficulty: float, device, gen=None) -> dict:
+    """Create matched task pairs differing only in the latent probe-wind sign.
+
+    Row order is [pair0+, pair0-, pair1+, pair1-, ...]. Every tensor-valued
+    field is duplicated exactly before probe_wind is overwritten, so geometry,
+    visuals, base dynamics and sensor biases are matched within each pair.
+    """
+    if n_pairs <= 0:
+        raise ValueError("n_pairs must be positive")
+    if not getattr(cfg.task, "info_gate_enabled", False):
+        raise ValueError("info_gate_enabled must be True for paired tasks")
+    base = sample_tasks(n_pairs, cfg, difficulty, device, gen)
+
+    def repeat(v):
+        if isinstance(v, dict):
+            return {k: repeat(x) for k, x in v.items()}
+        if torch.is_tensor(v):
+            return v.repeat_interleave(2, dim=0)
+        return v
+
+    out = repeat(base)
+    magnitude = base["dyn"]["probe_wind"][:, 1].abs().repeat_interleave(2)
+    sign = torch.tensor([1.0, -1.0], device=device).repeat(n_pairs)
+    out["dyn"]["probe_wind"].zero_()
+    out["dyn"]["probe_wind"][:, 1] = magnitude * sign
+    out["pair_id"] = torch.arange(n_pairs, device=device).repeat_interleave(2)
+    out["latent_sign"] = sign
+    return out
+
+
 def scatter_tasks(dst: dict, src: dict, idx: torch.Tensor):
     """Write src task fields (sampled for idx.numel() envs) into dst at idx."""
     for k, v in src.items():
