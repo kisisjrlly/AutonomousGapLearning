@@ -49,7 +49,7 @@ agl/analysis/latency.py   部署延迟基准
 configs/*.yaml            full + 4 消融的配置
 scripts/run_campaign.sh   训练+评估一体化战役（断点续跑+崩溃自恢复）
 scripts/run_evals.sh      独立评估（campaign 已含评估时此脚本备用）
-tests/                    pytest：test_sim.py / test_env_ppo.py（17 项，含穿墙回归）
+tests/                    pytest：仿真/训练/安全回放/信息门控/可视化回归测试
 
 runs/<run>/               log.csv(训练曲线) config.yaml ckpt_latest.pt ckpt_final.pt tb/
 results/<run>/eval_*.npz  评估轨迹（每 episode 逐步记录）
@@ -171,7 +171,7 @@ $PY -m pytest tests/ -q
 
 ## 10. 给接手 AI 的嘱咐
 
-1. 先跑通 `$PY -m pytest tests/ -q`（17 passed）确认环境。
+1. 先跑通 `$PY -m pytest tests/ -q` 确认环境。
 2. 用第 4 节命令恢复/查看训练；别动正在写的 runs/* 目录。
 3. 别"优化"已冻结的核心不变量（第 7 节）——尤其别让特权/全局信息进入观测。
 4. 论文写作只引用 summary.json / log.csv / npz 中真实存在的数字。
