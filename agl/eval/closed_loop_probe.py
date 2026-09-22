@@ -149,12 +149,11 @@ def run(
     env.state["wind"].zero_()
 
     st = env.state
+    # Recovery must end on the safe side of the environment's actual retry
+    # plane, not merely "some distance before the wall".
+    home_x = torch.full_like(env.task["wall_x"], cfg.sim.retry_x - .25)
     home = torch.stack(
-        [
-            env.task["wall_x"] - cfg.task.info_probe_distance - .30,
-            env.task["gap_cy"],
-            env.task["gap_cz"],
-        ],
+        [home_x, env.task["gap_cy"], env.task["gap_cz"]],
         dim=-1,
     )
     st["p"].copy_(home)
@@ -323,7 +322,14 @@ def run(
         brake_peak_x[valid_brake] - brake_start_x[valid_brake]
     ).clamp_min(0.0)
 
-    accepted = reason is None and bool((phase == 3).all())
+    recovered_retry_state = (
+        (st["p"][:, 0] < cfg.sim.retry_x)
+        & (~env.in_attempt)
+        & (env.attempts >= 1)
+    )
+    if reason is None and not recovered_retry_state.all():
+        reason = "retry_state_not_recovered"
+    accepted = reason is None and bool((phase == 3).all()) and bool(recovered_retry_state.all())
     summary = {
         "scope": "privileged_dynamic_braking_baseline_NOT_learned_NOT_safety_guarantee",
         "seed": seed,
@@ -358,6 +364,9 @@ def run(
         "min_clearance_m": minimum if np.isfinite(minimum) else None,
         "terminal_speed_max_mps": float(st["v"].norm(dim=-1).max()),
         "terminal_body_rate_max_radps": float(st["w"].norm(dim=-1).max()),
+        "retry_state_recovered_fraction": float(recovered_retry_state.float().mean()),
+        "terminal_x_max_m": float(st["p"][:, 0].max()),
+        "retry_plane_x_m": float(cfg.sim.retry_x),
         "phase_peak_speed_mps": {
             PHASE[i]: float(phase_peak_speed[:, i].max()) for i in range(4)
         },
