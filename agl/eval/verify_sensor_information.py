@@ -46,6 +46,8 @@ def run(n_pairs=8, steps=20, seed=20260922):
     cfg.sensor.gdir_noise = 0.0
     cfg.sensor.vel_noise = 0.0
     cfg.sensor.z_noise = 0.0
+    cfg.sensor.vel_bias_sigma = 0.0
+    cfg.sensor.z_bias_sigma = 0.0
 
     env = GapEnv(cfg, "cpu", difficulty=1.0)
     bank = scene.paired_information_tasks(n_pairs, cfg, 1.0, "cpu")
