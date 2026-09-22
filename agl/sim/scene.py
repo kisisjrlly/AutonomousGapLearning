@@ -133,8 +133,8 @@ def paired_information_tasks(n_pairs: int, cfg, difficulty: float, device, gen=N
     sign = torch.tensor([1.0, -1.0], device=device).repeat(n_pairs)
     out["dyn"]["probe_wind"].zero_()
     out["dyn"]["probe_wind"][:, 1] = magnitude * sign
-    out["pair_id"] = torch.arange(n_pairs, device=device).repeat_interleave(2)
-    out["latent_sign"] = sign
+    # Keep the exact sample_tasks schema so scatter_tasks() can inject this
+    # bank directly into an existing GapEnv. Pair identity is encoded by order.
     return out
 
 
