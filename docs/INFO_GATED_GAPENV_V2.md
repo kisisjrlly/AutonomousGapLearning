@@ -40,6 +40,15 @@ pair0(+wind), pair0(-wind), pair1(+wind), pair1(-wind), ...
 每一对任务的几何、纹理、基础风、质量、执行器参数与传感器偏置逐元素相同，仅隐藏局部风符号不同。
 这为后续 same-state history intervention 提供最小可控实验单元。
 
+## 无训练 smoke check
+
+```bash
+python3 -m agl.eval.verify_info_gate --pairs 8 --steps 20 --device cpu
+```
+
+预期结构：远处 pair wind delta 为 0；进入 probe zone 后隐藏横风方向相反；从匹配刚体初态施加相同
+hover 控制后，pair 的横向速度应产生可测分叉。这个检查只验证环境信息结构，不是策略适应证据。
+
 ## 当前提交不声称什么
 
 本提交只建立“必须交互才能出现新信息”的物理基础设施，不声称策略已经学会主动试探、退出或重试。
