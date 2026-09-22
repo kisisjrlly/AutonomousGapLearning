@@ -48,6 +48,13 @@ def prepare(recovery_path, device="cpu"):
         raise ValueError("same-state branch preparation currently requires device='cpu'")
     cfg.sim.device = "cpu"
     snapshot = saved["env"]
+    required = {"frame_delay_buf", "frame_buf_ptr", "delay_buf", "rng_cpu", "v_bias", "z_bias"}
+    missing = sorted(required.difference(snapshot))
+    if missing:
+        raise ValueError(
+            "recovery snapshot predates strict same-state requirements; regenerate it. "
+            f"missing={missing}"
+        )
     env = GapEnv(cfg, "cpu", difficulty=snapshot.get("difficulty", 1.0))
 
     branch_obs = {}
