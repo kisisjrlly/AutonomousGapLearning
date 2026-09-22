@@ -6,6 +6,7 @@ side only: it feeds rewards-as-events and metrics, and is never observed by
 the policy. The policy sees only egocentric sensors (no global position).
 """
 import torch
+import copy
 
 from . import dynamics, scene, render, collision
 from .maths import quat_rotate_inv, quat_from_yaw
@@ -80,6 +81,61 @@ class GapEnv:
         self.prev_x[idx] = self.state["p"][idx][:, 0]
         self.frame[idx] = render.render(self.state["p"][idx], self.state["q"][idx],
                                         self._task_slice(idx), self.rays, cfg.sensor)
+
+    def snapshot(self):
+        """Capture all mutable environment state needed for deterministic replay.
+
+        This is for offline intervention experiments. It includes observation
+        biases, delay queues, episode bookkeeping, rendered frame, task tensors,
+        and global torch RNG state; omitting any of these would make a later
+        history comparison confounded by different observations or noise.
+        """
+        def clone_tree(x):
+            if torch.is_tensor(x):
+                return x.clone()
+            if isinstance(x, dict):
+                return {k: clone_tree(v) for k, v in x.items()}
+            return copy.deepcopy(x)
+        snap = {
+            "task": clone_tree(self.task), "state": clone_tree(self.state),
+            "prev_action": self.prev_action.clone(), "delay_buf": self.delay_buf.clone(),
+            "buf_ptr": int(self.buf_ptr), "v_bias": self.v_bias.clone(),
+            "z_bias": self.z_bias.clone(), "t_step": self.t_step.clone(),
+            "attempts": self.attempts.clone(), "in_attempt": self.in_attempt.clone(),
+            "attempt_depth": self.attempt_depth.clone(), "retry_dwell": self.retry_dwell.clone(),
+            "ep_min_clear": self.ep_min_clear.clone(), "prev_dist": self.prev_dist.clone(),
+            "prev_x": self.prev_x.clone(), "frame": self.frame.clone(),
+            "rng_cpu": torch.get_rng_state(),
+        }
+        if self.dev.type == "cuda":
+            snap["rng_cuda"] = torch.cuda.get_rng_state(self.dev)
+        return snap
+
+    def restore(self, snapshot):
+        """Restore a snapshot produced by :meth:`snapshot` in-place."""
+        def restore_tree(dst, src):
+            if isinstance(dst, dict):
+                if dst.keys() != src.keys():
+                    raise ValueError("snapshot schema does not match environment")
+                for k in dst:
+                    restore_tree(dst[k], src[k])
+            elif torch.is_tensor(dst):
+                if dst.shape != src.shape or dst.dtype != src.dtype or dst.device != src.device:
+                    raise ValueError("snapshot tensor does not match environment")
+                dst.copy_(src)
+            else:
+                if dst != src:
+                    raise ValueError("snapshot scalar does not match environment")
+        restore_tree(self.task, snapshot["task"])
+        restore_tree(self.state, snapshot["state"])
+        for name in ("prev_action", "delay_buf", "v_bias", "z_bias", "t_step",
+                     "attempts", "in_attempt", "attempt_depth", "retry_dwell",
+                     "ep_min_clear", "prev_dist", "prev_x", "frame"):
+            getattr(self, name).copy_(snapshot[name])
+        self.buf_ptr = int(snapshot["buf_ptr"])
+        torch.set_rng_state(snapshot["rng_cpu"])
+        if self.dev.type == "cuda":
+            torch.cuda.set_rng_state(snapshot["rng_cuda"], self.dev)
 
     def _task_slice(self, idx):
         out = {}
