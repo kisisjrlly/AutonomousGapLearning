@@ -75,3 +75,26 @@ hover 控制后，pair 的横向速度应产生可测分叉。这个检查只验
 ```
 
 因此旧 NPZ 缺少 `rec_clear_pre` 时必须重新评估，禁止插值或错位补算。
+
+
+## 当前执行基线（dynamic braking v2）
+
+当前推荐入口是：
+
+```bash
+python3 -m agl.eval.closed_loop_probe --out artifacts/progress/dynamic-brake-check
+```
+
+该基线使用仿真真值反馈，不是学习策略。与旧版本不同，它以非零 x 速度进入 information gate，
+到近墙触发面后实际制动，再撤退并停稳；验收记录 brake-entry speed、stopping distance、最小净空、
+阶段峰值速度以及最终速度/角速度。只有全部环境完成恢复门槛后才保存 `recovery.pt`。
+
+随后严格 same-state 基础检查使用完整 recovery snapshot：
+
+```bash
+python3 -m agl.eval.same_state_intervention \
+  --recovery artifacts/progress/dynamic-brake-check/recovery.pt \
+  --out /tmp/same-state
+```
+
+这一步只证明未来三个 history 分支能从完整相同环境和相同第一帧观测出发，尚未注入 GRU/task memory。
