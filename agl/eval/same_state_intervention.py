@@ -77,18 +77,7 @@ def prepare(recovery_path, device="cpu"):
         for name in BRANCHES[1:]
     )
     env_equal = all(
-        _tree_equal(branch_snaps["correct"]["task"], branch_snaps[name]["task"])
-        and _tree_equal(branch_snaps["correct"]["state"], branch_snaps[name]["state"])
-        and torch.equal(
-            branch_snaps["correct"]["frame"], branch_snaps[name]["frame"]
-        )
-        and torch.equal(
-            branch_snaps["correct"]["frame_delay_buf"],
-            branch_snaps[name]["frame_delay_buf"],
-        )
-        and torch.equal(
-            branch_snaps["correct"]["delay_buf"], branch_snaps[name]["delay_buf"]
-        )
+        _tree_equal(branch_snaps["correct"], branch_snaps[name])
         for name in BRANCHES[1:]
     )
     if not obs_equal or not env_equal:
