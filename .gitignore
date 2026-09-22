@@ -4,3 +4,10 @@ runs/
 results/
 .pytest_cache/
 debug/
+
+# Generated experiment payloads: keep curated GIF/JPG/JSON in git, not raw tensors.
+artifacts/progress/*.npz
+artifacts/progress/*.pt
+artifacts/progress/**/trajectory.npz
+artifacts/progress/**/*.pt
+artifacts/viz/*.rrd
