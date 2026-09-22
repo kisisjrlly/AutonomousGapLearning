@@ -47,6 +47,9 @@ python3 -m agl.eval.sweep_safe_probe --n 24 --out /tmp/agl-safe-probe-sweep.json
 扫描器只检查参考几何安全门的保守性；它不覆盖动力学、视觉误差或真机执行器。
 可视化命令和图示含义见 `docs/PROGRESS_VISUALIZATION.md`。
 
+> 2026-09-22：第 2 项已开始由 `docs/INFO_GATED_GAPENV_V2.md` 落地到现有刚体环境；当前先用隐藏局部横风建立
+> “必须交互才能出现新信息”的最小物理任务，再扩展到视觉遮挡几何。
+
 ## 下一关：不能跳过的飞行验证
 
 1. 在渲染、碰撞和任务生成中一致实现厚通道内部结构；用相同初始图像和不同试探视图检查可辨识性。
