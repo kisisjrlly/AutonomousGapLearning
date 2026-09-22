@@ -69,6 +69,11 @@ class TaskCfg:
     wind_max: float = 2.5           # m/s steady, scaled by difficulty
     wind_gust_sigma: float = 0.8
     wind_tau: float = 2.0
+    # GapEnv-v2 information gate (default off for checkpoint compatibility).
+    info_gate_enabled: bool = False
+    info_probe_distance: float = 1.0
+    info_probe_ramp: float = 0.25
+    info_probe_wind: float = 1.2
 
 
 @dataclass
