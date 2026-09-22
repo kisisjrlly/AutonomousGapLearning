@@ -78,7 +78,10 @@ def load_eval_episode(path, task_id: int = 0) -> EvalEpisode:
     if not 0 <= task_id < n:
         raise ValueError(f"task must be in [0,{n})")
     steps = int(d["steps"][task_id]) if "steps" in d else int(d["rec_p"].shape[0])
-    steps = min(max(steps, 1), int(d["rec_p"].shape[0]))
+    if steps <= 0:
+        d.close()
+        raise ValueError(f"task {task_id} has no valid recorded steps")
+    steps = min(steps, int(d["rec_p"].shape[0]))
 
     rec = {}
     for key in ("p", "v", "q", "act", "clear", "clear_pre", "attempt_id",
@@ -109,6 +112,7 @@ def load_eval_episode(path, task_id: int = 0) -> EvalEpisode:
         frames = np.asarray(d["rec_frames"][:steps, task_id]).transpose(0, 2, 3, 1)
 
     meta = _decode_meta(d["meta"] if "meta" in d else None)
+    d.close()
     return EvalEpisode(path, task_id, steps, rec, task, meta, frames)
 
 
