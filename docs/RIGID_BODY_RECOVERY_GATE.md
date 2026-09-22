@@ -1,8 +1,9 @@
 # 刚体安全退出门（仿真诊断）
 
 修正：推力余量不是已验证的制动下界，已取消凭空设置 3 m/s² 下限。
-后退不再绕过净空检查。回放中的 contact_allowed / noncontact_rejected 只是同时刻统计，
-不是未来碰撞预测的误报/漏报率。尚未完成闭环制动回放，下面旧“保守下界”描述不作为安全依据。
+后退不再绕过净空检查。旧回放曾错误地把“动作前速度”和“动作后的最小净空”当作同一时刻数据；该时序错位已修正。
+新评估显式记录 `clear_pre`，并把动作前门控决定与同一动作随后控制周期内的 contact 对齐。
+这仍然只是一部转移诊断，不是完整闭环安全证明；下面旧“保守下界”描述不作为安全依据。
 
 `agl/sim/safety.py` 提供独立于策略网络的保守一维刹停门：
 
@@ -23,4 +24,7 @@ d_{stop}=|v|t_{reaction}+v^2/(2a_{min})+u_{state}
 
 当前测试覆盖公式、负速度退出、估计不确定性和推力下限。下一步应把它接到 `GapEnv` 的影子记录中，再与实际子步轨迹比较误报和漏报；在此之前不将其接入训练奖励或宣称安全保证。
 
-`replay_trace` 和 `agl/eval/replay_safety_gate.py` 现在提供离线回放接口。它们把门控结果与记录的负净空分别统计，明确报告 false negative（允许后发生接触）和 false positive（安全状态被拒绝）。回放只接受评估轨迹，不能替代控制周期内的动作否决；出现 false negative 时，该安全门不能进入真机部署。
+`replay_trace` 和 `agl/eval/replay_safety_gate.py` 现在要求新格式轨迹中的 `rec_clear_pre`、`rec_v`
+和 `rec_collision`。false negative 是“动作前门允许，但该动作随后发生接触”；false positive 是
+“动作前门拒绝，但随后未接触”。旧 NPZ 没有 `rec_clear_pre`，必须重新评估，禁止用错位数据补算。
+回放不能替代闭环动作否决；出现 false negative 时，该门不能进入真机部署。
