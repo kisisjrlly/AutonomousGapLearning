@@ -20,6 +20,7 @@ def _fake_eval(path):
         "rec_clear": np.ones((t,n), np.float32),
         "rec_attempt_id": np.zeros((t,n), np.float32),
         "rec_collision": np.zeros((t,n), np.float32),
+        "rec_obs_vec": np.zeros((t,n,18), np.float32),
         "rec_frames": np.zeros((t,1,3,4,6), np.uint8),
         "steps": np.array([3, 5]),
         "task_wall_x": np.array([3., 3.]),
@@ -47,6 +48,7 @@ def test_eval_episode_loader_clips_auto_reset_tail(tmp_path):
     assert ep.rec["p"].shape == (3, 3)
     assert ep.frames.shape == (3, 4, 6, 3)
     assert ep.task["probe_wind"].tolist() == [0., 1., 0.]
+    assert ep.rec["obs_vec"].shape == (3, 18)
 
 
 def test_eval_episode_without_saved_camera_for_other_task(tmp_path):
