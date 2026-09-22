@@ -156,3 +156,18 @@
   runs/recipe_v3/log_resume_backup.csv（trainer resume 会截断重写 CSV 头）。
 
 - 2026-09-22：校正真实 GapEnv 三维回放，加入 `gap_roll` 旋转轮廓；生成 `artifacts/progress/full-s1-task0-rotated.gif`。该动画使用真实评估 NPZ 的位置/速度/净空/碰撞记录，仍属于离线诊断。
+
+
+## 2026-09-22（研究主线落地：information-gated GapEnv v2）
+
+- 将旧 7-run recurrent-PPO campaign 降级为 legacy baseline；脚本默认阻止误启动，复现时需显式设置
+  `AGL_ALLOW_LEGACY_CAMPAIGN=1`。
+- TaskCfg 新增默认关闭的 information gate：隐藏局部横风只在近墙 probe zone 平滑激活，
+  用真实刚体/IMU/VIO 交互制造“安全接近后才出现的新信息”，旧任务默认行为不变。
+- 新增 `scene.paired_information_tasks()`：每对任务除隐藏横风符号外，几何、视觉、基础动力学和传感器偏置完全相同。
+- 新增 `agl.eval.verify_info_gate` CPU smoke check，验证远处 pair 等价、近墙隐变量激活及相同控制下的刚体响应分叉。
+- 修复 safety replay 时序对齐：评估新增 `rec_clear_pre`；门控使用动作前 clearance/velocity，
+  并与同一动作随后控制周期内的 `rec_collision` 对齐。旧 NPZ 禁止继续用于该统计。
+- 去除 reward shaping 中凭空的 3 m/s² 最小制动下界；该项仍只是训练 proxy，不是安全保证。
+- 下一步：实现低速刚体 probe→stop→retreat，保存 post-retreat snapshot，并从同一物理状态执行
+  correct / removed / swapped history intervention。
