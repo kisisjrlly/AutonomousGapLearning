@@ -107,10 +107,10 @@ def run(
     seed=0,
     phase_limit=360,
     dwell_steps=12,
-    approach_speed=.55,
-    probe_wall_distance=.55,
+    approach_speed=.45,
+    probe_wall_distance=.60,
     clearance_margin=.18,
-    min_brake_entry_speed=.30,
+    min_brake_entry_speed=.25,
     out_dir=None,
 ):
     """Run the privileged dynamic-braking protocol.
@@ -407,8 +407,8 @@ def main():
     p.add_argument("--out", required=True)
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--pairs", type=int, default=2)
-    p.add_argument("--approach-speed", type=float, default=.55)
-    p.add_argument("--probe-wall-distance", type=float, default=.55)
+    p.add_argument("--approach-speed", type=float, default=.45)
+    p.add_argument("--probe-wall-distance", type=float, default=.60)
     a = p.parse_args()
     print(json.dumps(run(
         n_pairs=a.pairs,
