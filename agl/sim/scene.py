@@ -74,6 +74,16 @@ def sample_tasks(n: int, cfg, difficulty: float, device, gen=None) -> dict:
     wind_dir = _u(n, 0.0, 2 * math.pi, d, gen)
     task["dyn"]["wind_steady"] = torch.stack(
         [wind_mag * wind_dir.cos(), wind_mag * wind_dir.sin(), torch.zeros(n, device=d)], dim=-1)
+    # Optional latent disturbance used by GapEnv v2. It is zero when disabled
+    # and is only activated near the wall by env.py, so it cannot be inferred
+    # from the initial state alone.
+    probe_wind = torch.zeros(n, 3, device=d)
+    if getattr(t, "info_gate_enabled", False):
+        mag = _u(n, 0.8 * t.info_probe_wind, 1.2 * t.info_probe_wind, d, gen)
+        sign = torch.where(torch.rand(n, device=d, generator=gen) < 0.5,
+                           -torch.ones(n, device=d), torch.ones(n, device=d))
+        probe_wind[:, 1] = sign * mag
+    task["dyn"]["probe_wind"] = probe_wind
     # visual randomization
     task["vis"] = {
         "wall_alb": _u(n, 0.15, 0.85, d, gen).unsqueeze(-1) * torch.ones(1, 3, device=d)
