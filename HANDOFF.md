@@ -3,7 +3,7 @@
 > 本文件是**唯一入口**。任何 AI（codex、另一 Claude 会话等）接手本项目时，请先完整阅读本文件，
 > 再按需阅读 `docs/PIPELINE.md`（运行手册）、`docs/PROJECT_LOG.md`（历史记录）、
 > `README.md`（研究纲领）、`docs/tech-selection.md`（选型依据）、`paper/`（论文素材）。
-> 最后更新：2026-09-16（研究主线调整为真机无碰撞在线适应）。
+> 最后更新：2026-09-22（加入 information-gated GapEnv v2 与正式行为可视化栈）。
 
 ## 1. 一句话是什么
 
@@ -27,6 +27,7 @@ docs/tech-selection.md    技术选型与设计决策（仿真器/传感器/动�
 docs/PIPELINE.md          各阶段运行手册（本文件的下游）
 docs/REAL_FLIGHT_ADAPTATION.md  真机无碰撞在线适应与验收规范
 docs/INFO_GATED_GAPENV_V2.md     当前信息门控刚体任务设计与 smoke check
+docs/VISUALIZATION_STACK.md       GapEnv/Rerun 3D、ego RGB、时间轴与 checkpoint 行为监视
 docs/PROJECT_LOG.md       时间线历史记录
 paper/outline.md          论文结构大纲
 paper/intro-draft.md      Introduction 初稿
@@ -42,6 +43,9 @@ agl/train/ppo.py          循环 PPO（BPTT、GAE、辅助标签扫描）
 agl/train/train.py        训练入口（rollout 收集 + 课程 + 日志/存档）
 agl/eval/evaluate.py      评估：固定种子任务库、三划分、轨迹记录、上下文清空
 agl/eval/verify_info_gate.py  无训练的成对 latent-wind 环境 smoke check
+agl/eval/view_eval_rerun.py    打开真实 eval NPZ 的交互式 3D/ego/telemetry 回放
+agl/eval/view_checkpoint_rerun.py  固定验证任务上的 checkpoint 行为监视
+agl/viz/                 依赖隔离的可视化数据模型与 Rerun backend
 agl/eval/metrics.py       README §12 全指标（离线的 attempt 分段 + 统计）
 agl/analysis/stats.py     bootstrap CI / 比例检验 / 配对检验
 agl/analysis/make_paper_data.py  聚合所有 eval → results/paper/summary.json（论文数据源）
@@ -54,7 +58,8 @@ scripts/run_evals.sh      独立评估（campaign 已含评估时此脚本备用
 tests/                    pytest：仿真/训练/安全回放/信息门控/可视化回归测试
 
 runs/<run>/               log.csv(训练曲线) config.yaml ckpt_latest.pt ckpt_final.pt tb/
-results/<run>/eval_*.npz  评估轨迹（每 episode 逐步记录）
+results/<run>/eval_*.npz  评估轨迹（每 episode 逐步记录；可选保存 ego RGB）
+artifacts/viz/*.rrd       Rerun 可重复交互回放（非安全证据）
 results/paper/summary.json 论文引用数据的单一来源
 ```
 
@@ -62,7 +67,9 @@ results/paper/summary.json 论文引用数据的单一来源
 
 2026-09-22 补充：抽象协议开始迁入真实刚体环境。GapEnv v2 新增默认关闭的 information gate：
 隐藏局部横风只在近墙 probe zone 激活；可生成仅 latent wind 符号不同的严格配对任务。
-旧 PPO campaign 已降级为 legacy baseline。下一步优先完成刚体 probe/retreat 与 same-state history intervention。
+旧 PPO campaign 已降级为 legacy baseline。已加入独立 Rerun 可视化层，真实 eval/checkpoint 可直接观察
+3D 姿态、轨迹、ego RGB、clearance/risk/attempt 和 information-gate probe zone。下一步优先完成
+刚体 probe/retreat 与 same-state history intervention，并把 safety/history 事件继续叠加到同一 Viewer。
 
 - **当前阻塞**：机器在 GPU 满载下频繁硬死机；更关键的是，**仿真策略尚未按真机标准证明零接触安全试探闭环**——
   这是真机实验的必要前提，必须在仿真中先验证通过（未知窄缝、零接触约束、证据收益、历史替换对照）。

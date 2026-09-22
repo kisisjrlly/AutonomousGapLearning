@@ -1,0 +1,2 @@
+# Optional visualization stack. The core simulator does not require this.
+rerun-sdk>=0.35,<0.39
