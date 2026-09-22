@@ -19,6 +19,8 @@ def test_dynamic_braking_recovery_and_snapshot_replay(tmp_path):
     assert result["min_clearance_m"] > .18
     assert result["terminal_speed_max_mps"] < .08
     assert result["terminal_body_rate_max_radps"] < .12
+    assert result["retry_state_recovered_fraction"] == 1.0
+    assert result["terminal_x_max_m"] < result["retry_plane_x_m"]
     assert result["phase_peak_speed_mps"]["approach_probe"] > result["terminal_speed_max_mps"]
 
     saved = torch.load(dest / "recovery.pt", weights_only=False)
