@@ -121,7 +121,7 @@ class GapEnv:
             task["gap_roll"].sin().unsqueeze(-1), task["gap_roll"].cos().unsqueeze(-1),
             st["v"] / 5.0,
             clear.clamp(-0.2, 2.0).unsqueeze(-1) / 2.0,
-            (dyn["wind_steady"] + st["wind"]) / 3.0,
+            (self._effective_wind_steady() + st["wind"]) / 3.0,
             (dyn["mass"] / 0.775 - 1.0).unsqueeze(-1),
             (dyn["tmax"] / (dyn["mass"] * 9.81) / 3.0).unsqueeze(-1),
             (dyn["delay"].float() / 2.0).unsqueeze(-1),
@@ -134,6 +134,18 @@ class GapEnv:
     def _gap_center(self):
         return torch.stack([self.task["wall_x"] + 0.5 * self.task["thick"],
                             self.task["gap_cy"], self.task["gap_cz"]], dim=-1)
+
+    def _effective_wind_steady(self):
+        """Wind acting now; optional latent crosswind appears only near the gap."""
+        dyn = self.task["dyn"]
+        base = dyn["wind_steady"]
+        local = dyn.get("probe_wind")
+        if local is None or not getattr(self.cfg.task, "info_gate_enabled", False):
+            return base
+        start = self.task["wall_x"] - self.cfg.task.info_probe_distance
+        ramp = max(float(self.cfg.task.info_probe_ramp), 1e-6)
+        alpha = ((self.state["p"][:, 0] - start) / ramp).clamp(0.0, 1.0)
+        return base + alpha.unsqueeze(-1) * local
 
     # ------------------------------------------------------------------- step
     def step(self, action):
@@ -159,7 +171,9 @@ class GapEnv:
             contact_speed = torch.where(newly, s["v"].norm(dim=-1), contact_speed)
             min_clear = torch.minimum(min_clear, c)
 
-        dynamics.step(st, t_cmd, w_cmd, self.task["dyn"], cfg.sim.dt_ctrl,
+        dyn_step = dict(self.task["dyn"])
+        dyn_step["wind_steady"] = self._effective_wind_steady()
+        dynamics.step(st, t_cmd, w_cmd, dyn_step, cfg.sim.dt_ctrl,
                       cfg.sim.substeps, substep_cb=_cb)
         # sensor bias OU
         s = cfg.sensor
@@ -233,7 +247,8 @@ class GapEnv:
         rew = rew - r.smooth_k * (action - self.prev_action).square().sum(-1)
         # progressive-commitment: approach slow enough to retain the abort option.
         # In the approach zone, if braking distance exceeds clearance -> penalty.
-        a_brake = (self.task["dyn"]["tmax"] / self.task["dyn"]["mass"] - 9.81).clamp_min(3.0)
+        # Training-only shaping proxy; do not invent a positive braking lower bound.
+        a_brake = (self.task["dyn"]["tmax"] / self.task["dyn"]["mass"] - 9.81).clamp_min(1e-6)
         brake_dist = speed.square() / (2.0 * a_brake) + speed * r.brake_reaction
         in_approach = x < (self.task["wall_x"] - r.brake_gate)
         rew = rew - r.brake_k * (in_approach.float()
