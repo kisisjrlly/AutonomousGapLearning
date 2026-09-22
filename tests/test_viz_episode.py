@@ -4,6 +4,7 @@ import json
 import numpy as np
 
 from agl.viz.episode import gap_outline, load_eval_episode, quat_rotate_wxyz
+from agl.viz import rerun_episode
 
 
 def _fake_eval(path):
@@ -74,3 +75,10 @@ def test_eval_episode_rejects_zero_length_task(tmp_path):
     np.savez_compressed(path, **data)
     with pytest.raises(ValueError, match="no valid recorded steps"):
         load_eval_episode(path, 0)
+
+
+def test_rerun_backend_is_optional_at_import_time():
+    # Importing visualization helpers must not require rerun-sdk; only actually
+    # opening/exporting a Rerun recording should import the optional package.
+    assert callable(rerun_episode.require_rerun)
+    assert callable(rerun_episode.log_episode)
