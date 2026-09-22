@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation, PillowWriter
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import numpy as np
+from ..viz.episode import load_eval_episode, quat_rotate_wxyz
 
 
 def _block(x0, x1, y0, y1, z0, z1):
@@ -60,22 +61,38 @@ def load_record(path, task_id):
 
 def animate(path, out, task_id=0, fps=20):
     rec, task = load_record(path, task_id)
+    ep = load_eval_episode(path, task_id)
     p = rec['p']; v = rec['v']; clear = rec['clear']; attempt = rec['attempt_id']; collision = rec['collision']
     fig = plt.figure(figsize=(9, 6)); ax = fig.add_subplot(projection='3d')
-    ax.set(xlim=(min(-.5,p[:,0].min()), max(3.5,p[:,0].max()+.2)), ylim=(-2,2), zlim=(.3,3.2), xlabel='x (m)', ylabel='y (m)', zlabel='z (m)')
+    ax.set(xlim=(float(p[:,0].min())-.4, max(task['wall_x']+task['thick']+.2,float(p[:,0].max())+.4)),
+           ylim=(min(float(p[:,1].min())-.4,task['gap_cy']-task['gap_w']/2-.3),
+                 max(float(p[:,1].max())+.4,task['gap_cy']+task['gap_w']/2+.3)),
+           zlim=(min(float(p[:,2].min())-.4,task['gap_cz']-task['gap_h']/2-.3),
+                 max(float(p[:,2].max())+.4,task['gap_cz']+task['gap_h']/2+.3)), xlabel='x (m)', ylabel='y (m)', zlabel='z (m)')
     ax.set_box_aspect((3.8,4,3)); ax.view_init(elev=24, azim=-62)
-    ax.add_collection3d(Poly3DCollection(_wall_faces(task), facecolors='#788896', alpha=.18, edgecolors='#34495e', linewidths=.25))
+    # Wireframe opening avoids drawing a solid slab across the actual hole.
     outline = _rotate_gap_outline(task)
     ax.plot(outline[:,0], outline[:,1], outline[:,2], color='#b23a48', lw=2)
     ax.text(task['wall_x'], task['gap_cy'], task['gap_cz']+task['gap_h']/2+.15, 'recorded gap', color='#b23a48')
     path_line, = ax.plot([], [], [], color='#2878b5', lw=2); drone, = ax.plot([], [], [], 'o', color='#e58b24', ms=8)
+    arms, = ax.plot([], [], [], color='#e58b24', lw=3)
+    fig.suptitle(ep.meta.get('scope', 'Recorded GapEnv evaluation'), fontsize=10)
+    if ep.meta.get('info_gate_enabled'):
+        px = task['wall_x'] - ep.meta['info_probe_distance']
+        ax.plot([px,px,px,px,px], [-2,2,2,-2,-2], [.3,.3,3.2,3.2,.3], '--', color='#477a54')
+    dt = ep.meta.get('dt_ctrl', .025)
+    # Preserve physical duration; fps changes sampling, not simulation time.
+    indices = np.unique(np.r_[np.minimum((np.arange(0, len(p)*dt, 1/fps)/dt).astype(int), len(p)-1), len(p)-1])
     status = ax.text2D(.02,.94,'', transform=ax.transAxes); info = ax.text2D(.02,.88,'', transform=ax.transAxes, fontsize=9)
     def update(i):
         q=p[:i+1]; path_line.set_data_3d(q[:,0],q[:,1],q[:,2]); drone.set_data_3d([p[i,0]],[p[i,1]],[p[i,2]])
         c=float(clear[i]); col=bool(collision[i]); phase='CONTACT' if col else ('attempt '+str(int(attempt[i])) if attempt[i]>0 else 'approach')
-        status.set_text(f'task {task_id} | {phase} | collision={int(col)}'); info.set_text(f'x={p[i,0]:.2f}  speed={np.linalg.norm(v[i]):.2f} m/s  clearance={c:.3f} m')
+        phase = ep.phase(i)
+        body = quat_rotate_wxyz(ep.rec['q'][i], np.array([[-.16,0,0],[.16,0,0],[0,0,0],[0,-.16,0],[0,.16,0]])) + p[i]
+        arms.set_data_3d(body[:,0],body[:,1],body[:,2])
+        status.set_text(f't={i*dt:.3f}s | task {task_id} | {phase} | collision={int(col)}'); info.set_text(f'x={p[i,0]:.2f}  speed={np.linalg.norm(v[i]):.2f} m/s  interval clearance={c:.3f} m')
         drone.set_color('#d62728' if col else '#e58b24'); return path_line,drone,status,info
-    ani=FuncAnimation(fig,update,frames=len(p),interval=1000/fps,blit=False); out=Path(out)
+    ani=FuncAnimation(fig,update,frames=indices,interval=1000/fps,blit=False); out=Path(out)
     if out.exists(): raise FileExistsError(out)
     out.parent.mkdir(parents=True,exist_ok=True); ani.save(out,writer=PillowWriter(fps=fps)); plt.close(fig)
 

@@ -97,6 +97,8 @@ class GapEnv:
                 return {k: clone_tree(v) for k, v in x.items()}
             return copy.deepcopy(x)
         snap = {
+            "difficulty": float(self.difficulty),
+            "config": copy.deepcopy(self.cfg),
             "task": clone_tree(self.task), "state": clone_tree(self.state),
             "prev_action": self.prev_action.clone(), "delay_buf": self.delay_buf.clone(),
             "buf_ptr": int(self.buf_ptr), "v_bias": self.v_bias.clone(),
@@ -113,6 +115,8 @@ class GapEnv:
 
     def restore(self, snapshot):
         """Restore a snapshot produced by :meth:`snapshot` in-place."""
+        if "config" in snapshot and self.cfg != snapshot["config"]:
+            raise ValueError("snapshot config does not match environment")
         def restore_tree(dst, src):
             if isinstance(dst, dict):
                 if dst.keys() != src.keys():
@@ -133,6 +137,7 @@ class GapEnv:
                      "ep_min_clear", "prev_dist", "prev_x", "frame"):
             getattr(self, name).copy_(snapshot[name])
         self.buf_ptr = int(snapshot["buf_ptr"])
+        self.difficulty = snapshot.get("difficulty", self.difficulty)
         torch.set_rng_state(snapshot["rng_cpu"])
         if self.dev.type == "cuda":
             torch.cuda.set_rng_state(snapshot["rng_cuda"], self.dev)

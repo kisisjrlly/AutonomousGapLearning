@@ -31,6 +31,8 @@ class EvalEpisode:
             return "GIVE_UP"
         if "oob" in self.rec and bool(self.rec["oob"][i]):
             return "OOB"
+        if "phase" in self.rec:
+            return str(self.rec["phase"][i]).upper() + " (COMMAND)"
         aid = int(self.rec["attempt_id"][i])
         in_attempt = bool(self.rec.get("in_attempt", np.zeros(self.steps))[i])
         return f"ATTEMPT_{aid}" if in_attempt or aid > 0 else "APPROACH"
@@ -86,7 +88,7 @@ def load_eval_episode(path, task_id: int = 0) -> EvalEpisode:
     rec = {}
     for key in ("p", "v", "q", "act", "clear", "clear_pre", "attempt_id",
                 "in_attempt", "end_event", "end_outcome", "success", "collision",
-                "collision_high", "done", "oob", "gave_up", "risk"):
+                "collision_high", "done", "oob", "gave_up", "risk", "phase"):
         npz_key = f"rec_{key}"
         if npz_key in d:
             rec[key] = np.asarray(d[npz_key][:steps, task_id])

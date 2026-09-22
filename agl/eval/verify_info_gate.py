@@ -71,7 +71,9 @@ def run_check(n_pairs=8, device="cpu", steps=20, seed=20260922):
     env.delay_buf[:] = action.unsqueeze(1)
 
     for _ in range(steps):
-        env.step(action)
+        _, _, done, info = env.step(action)
+        if done.any() or info['collision'].any() or not torch.isfinite(info['clearance']).all() or (info['clearance'] <= 0).any():
+            raise RuntimeError('information-gate check invalid: contact, terminal/reset or invalid clearance')
 
     vy = env.state["v"][:, 1].clone()
     pair_vy_separation = (vy[0::2] - vy[1::2]).abs()

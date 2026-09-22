@@ -1,5 +1,32 @@
 # 开发过程可视化
 
+## 最新：反馈控制基线
+
+复审与局限见 [REVIEW_20260922.md](REVIEW_20260922.md)。新版动画是
+`artifacts/progress/closed-loop-review-s0-v2/flight.gif`，展示实际接近、停留和撤退。
+这不是旧开环脚本，也不是学习策略；通过停稳验收才保存 recovery.pt。
+
+```bash
+/home/zhaoguodong/miniconda3/bin/python3 -m agl.eval.closed_loop_probe --out artifacts/progress/new-feedback-run
+/home/zhaoguodong/miniconda3/bin/python3 -m agl.eval.animate_eval_3d --input artifacts/progress/new-feedback-run/trajectory.npz --out artifacts/progress/new-feedback-run/flight.gif
+```
+
+## 2026-09-22 实际 CTBR 回放与审计
+
+当前可直接观看 `artifacts/progress/probe-audit-seed0.gif`，原始记录为同名 NPZ，统计为同名 JSON。
+这是 GapEnv 实际积分轨迹，不是插值参考路径或学习策略。阶段标签后面的 COMMAND 表示发出的指令，不代表状态已达到。
+固定 seed 0、4 个环境：无接触，但撤退阶段结束最大速度 1.143 m/s；因此没有完成停稳恢复，更没有重试穿越。
+本轮补上了此前统计 JSON 到现有 Viewer 缺失的连接，没有实现新的闭环控制器。
+
+```bash
+/home/zhaoguodong/miniconda3/bin/python3 -m agl.eval.safe_probe_retreat --pairs 2 --seed 0 --out artifacts/progress/probe-new.json --record artifacts/progress/probe-new.npz
+/home/zhaoguodong/miniconda3/bin/python3 -m agl.eval.animate_eval_3d --input artifacts/progress/probe-new.npz --out artifacts/progress/probe-new.gif
+```
+
+记录的 p/q/v 是动作前状态，clear/collision/done 是接下来动作区间的结果；终止后的自动重置状态不写入轨迹。
+此文件未记录 clear_pre，不能用于 safety replay。动画使用真实姿态和控制周期，播放帧率不再任意拉伸物理时间。
+Rerun 可使用同一 NPZ，但当前 Python 环境未安装可选 rerun-sdk；已验证的展示路径是 GIF。
+
 当前可视化分成三层，证据等级必须区分：
 
 1. **Rerun GapEnv Viewer（主调试界面）**：真实评估/真实 checkpoint 的 3D 姿态、轨迹、ego RGB、

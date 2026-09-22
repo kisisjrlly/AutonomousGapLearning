@@ -1,4 +1,5 @@
 import torch
+import pytest
 
 from agl.config import load_config
 from agl.sim.env import GapEnv
@@ -23,3 +24,15 @@ def test_snapshot_restore_replays_identical_observation_and_transition():
     for a, b in zip(first, second):
         for x, y in zip(a, b):
             assert torch.equal(x, y)
+
+
+def test_snapshot_difficulty_and_config():
+    cfg = load_config(); cfg.sim.n_envs = 2; cfg.sim.device = 'cpu'
+    env = GapEnv(cfg, 'cpu', difficulty=.7)
+    snap = env.snapshot()
+    env.difficulty = .1
+    env.restore(snap)
+    assert env.difficulty == .7
+    cfg.sim.dt_ctrl *= 2
+    with pytest.raises(ValueError, match='config'):
+        env.restore(snap)

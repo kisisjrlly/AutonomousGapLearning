@@ -1,5 +1,7 @@
 # HANDOFF — 项目交接索引（给任何后续 AI / 协作者）
 
+> 2026-09-22 复审更新：先读 [当日实现评审](docs/REVIEW_20260922.md)。旧 safe_probe_retreat 是开环反例；新 closed_loop_probe 是仿真真值反馈基线，28 个受控环境完成恢复验收，48 项测试通过。尚无学习重试/穿缝/真机结果，禁止沿用“已实现安全学习闭环”的说法。
+
 > 本文件是**唯一入口**。任何 AI（codex、另一 Claude 会话等）接手本项目时，请先完整阅读本文件，
 > 再按需阅读 `docs/PIPELINE.md`（运行手册）、`docs/PROJECT_LOG.md`（历史记录）、
 > `README.md`（研究纲领）、`docs/tech-selection.md`（选型依据）、`paper/`（论文素材）。

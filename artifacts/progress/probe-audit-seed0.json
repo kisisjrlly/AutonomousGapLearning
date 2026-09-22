@@ -1,0 +1,47 @@
+{
+  "scope": "scripted_dynamics_probe_stop_retreat_NOT_learned_adaptation",
+  "seed": 0,
+  "phase_end": {
+    "probe": {
+      "speed_max": 0.004713200032711029,
+      "x_displacement": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "stop": {
+      "speed_max": 0.007722956128418446,
+      "x_displacement": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "retreat": {
+      "speed_max": 1.1428401470184326,
+      "x_displacement": [
+        -0.2236623764038086,
+        -0.2236623764038086,
+        -0.14379024505615234,
+        -0.14379024505615234
+      ]
+    }
+  },
+  "protocol_completed": false,
+  "acceptance_scope": "contact_free_only; stopping and recovered retry state not certified",
+  "n_pairs": 2,
+  "steps_executed": 44,
+  "phase_at_stop": "retreat",
+  "safe_count": 4,
+  "contact_count": 0,
+  "done_count": 0,
+  "unsafe_count": 0,
+  "min_clearance": 0.8182861804962158,
+  "pair_post_y": [
+    0.012767608277499676,
+    0.01687135174870491
+  ]
+}

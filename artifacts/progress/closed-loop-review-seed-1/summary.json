@@ -1,0 +1,28 @@
+{
+  "scope": "privileged_feedback_baseline_NOT_learned_NOT_safety_guarantee",
+  "seed": 1,
+  "n_envs": 8,
+  "protocol_completed": true,
+  "failure_reason": null,
+  "stages": [
+    {
+      "phase": "approach",
+      "completed": true,
+      "speed_max": 0.051952436566352844
+    },
+    {
+      "phase": "stop",
+      "completed": true,
+      "speed_max": 0.04017927497625351
+    },
+    {
+      "phase": "retreat",
+      "completed": true,
+      "speed_max": 0.050853222608566284
+    }
+  ],
+  "steps": 198,
+  "min_clearance": 0.7735512256622314,
+  "state_feedback": "ground truth p/v/q/w; true mass and thrust calibration",
+  "safety": "post-step rejection and pre-step margin; NOT certified action shield"
+}

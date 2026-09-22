@@ -7,6 +7,7 @@ the caller may later inject different history into a frozen policy.
 import argparse
 import copy
 import json
+from pathlib import Path
 
 import torch
 
@@ -60,6 +61,8 @@ def prepare(n_pairs=4, steps=12, device='cpu', seed=20260922):
         probe_contact |= info['collision']
         if probe_done.any() or probe_contact.any():
             raise RuntimeError('probe was not safe: terminal/reset/contact occurred')
+        if not torch.isfinite(probe_min_clear).all() or (probe_min_clear <= 0).any() or not all(torch.isfinite(v).all() for v in env.state.values()):
+            raise RuntimeError('probe was not safe: invalid state or clearance')
     post = _clone_state(env)
     pair_delta = {k: float((v[0::2] - v[1::2]).abs().max().item())
                   for k, v in post.items() if torch.is_tensor(v)}
@@ -81,12 +84,17 @@ def main():
     p.add_argument('--device', default='cpu')
     p.add_argument('--out', required=True)
     a = p.parse_args()
+    # Refuse existing outputs before any expensive work or partial overwrite.
+    for suffix in ('.pt', '.json'):
+        if Path(a.out + suffix).exists():
+            raise FileExistsError(a.out + suffix)
     result = prepare(a.pairs, a.steps, a.device)
     # Save tensors separately to avoid JSON silently losing precision.
     serial = {k: v for k, v in result.items() if not torch.is_tensor(v)
               and k not in ('pre_state', 'post_state')}
-    torch.save({'pre_state': result['pre_state'], 'post_state': result['post_state'],
-                'probe_wind': result['probe_wind']}, a.out + '.pt')
+    with open(a.out + '.pt', 'xb') as f:
+        torch.save({'pre_state': result['pre_state'], 'post_state': result['post_state'],
+                    'probe_wind': result['probe_wind']}, f)
     with open(a.out + '.json', 'x') as f:
         json.dump(serial, f, indent=2)
     print(json.dumps(serial, indent=2))
