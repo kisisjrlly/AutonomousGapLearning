@@ -65,6 +65,7 @@ def test_configurable_image_delay_zero_vs_one(monkeypatch):
         cfg.sensor.img_delay_steps = delay
         env = GapEnv(cfg, "cpu", difficulty=1.)
         env.state["v"].zero_()
+        env.state["v"][:, 0] = 1.0
         env.task["dyn"]["wind_steady"].zero_()
         env.task["dyn"]["gust_sigma"].zero_()
         action = torch.zeros(1, 4)
