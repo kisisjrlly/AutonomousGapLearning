@@ -172,3 +172,19 @@
 - 下一步：实现低速刚体 probe→stop→retreat，保存 post-retreat snapshot，并从同一物理状态执行
 - 2026-09-22：新增 `same_state_intervention.py`，为配对任务保存相同初态和 probe 后状态快照；当前只验证实验 plumbing，不是适应结果。
   correct / removed / swapped history intervention。
+
+
+## 2026-09-22（正式可视化基础设施：GapEnv + Rerun）
+
+- 新增独立 \`agl/viz\` 层，核心仿真/训练不 import Rerun，避免可视化依赖污染高吞吐训练后端。
+- 新增 \`view_eval_rerun.py\`：把真实 \`eval_*.npz\` 交互式回放为 3D 机体姿态、轨迹、窄缝、
+  retry/success plane、probe zone、速度向量、ego RGB、clearance/risk/attempt/action 时间序列。
+- 新增 \`view_checkpoint_rerun.py\`：可直接对 \`ckpt_latest.pt\` 在固定验证 task 上运行 deterministic
+  monitor episode，训练期间不需要只看 CSV 猜行为。
+- \`evaluate.py\` 新增 \`--save-frames N\`，只为前 N 个任务保存策略真实 ego RGB，并记录
+  \`probe_wind\` 与 viewer 所需的 dt/retry/success/info-gate 元数据。
+- Rerun recording 可保存为 \`.rrd\` 反复拖时间轴检查；loader 严格按每 task 的 \`steps\` 截断，
+  防止 done 后 auto-reset 新任务污染同一 episode。
+- 旧 Matplotlib GIF 保留为无额外依赖 fallback；safe-probe reference 动画继续明确为协议示意，不是学习结果。
+- 下一步：在同一 Viewer 叠加 6-DoF safety gate、probe→stop→retreat phase 与
+  correct/removed/swapped history ghost trajectories。
