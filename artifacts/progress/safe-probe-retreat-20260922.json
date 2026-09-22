@@ -1,0 +1,14 @@
+{
+  "scope": "scripted_dynamics_probe_stop_retreat_NOT_learned_adaptation",
+  "n_pairs": 2,
+  "steps_executed": 44,
+  "phase_at_stop": "retreat",
+  "safe_count": 4,
+  "contact_count": 0,
+  "done_count": 0,
+  "min_clearance": 0.8183379173278809,
+  "pair_post_y": [
+    0.0056831929832696915,
+    0.027797885239124298
+  ]
+}
