@@ -52,6 +52,8 @@ def make_bank(cfg, split, n, device):
 @torch.no_grad()
 def run_eval(model, cfg, split, n_tasks, device, wipe_context=False,
              reset_between_attempts=False, noise_seed=1234, save_frames=0):
+    if save_frames < 0 or save_frames > n_tasks:
+        raise ValueError("save_frames must be in [0, n_tasks]")
     torch.manual_seed(noise_seed)  # observation noise reproducibility
     ecfg = copy.deepcopy(cfg)
     ecfg.sim.n_envs = n_tasks
@@ -73,6 +75,8 @@ def run_eval(model, cfg, split, n_tasks, device, wipe_context=False,
     task_np["wind_mag"] = bank["dyn"]["wind_steady"].norm(dim=-1).cpu().numpy()
     task_np["mass"] = bank["dyn"]["mass"].cpu().numpy()
     task_np["twr"] = (bank["dyn"]["tmax"] / (bank["dyn"]["mass"] * 9.81)).cpu().numpy()
+    task_np["probe_wind"] = bank["dyn"].get(
+        "probe_wind", torch.zeros(N, 3, device=device)).cpu().numpy()
 
     frames = (np.zeros((T, save_frames, 3, ecfg.sensor.img_h, ecfg.sensor.img_w),
                        dtype=np.uint8) if save_frames else None)
@@ -134,6 +138,10 @@ def main():
     ap.add_argument("--wipe-context", action="store_true")
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--noise-seed", type=int, default=1234)
+    ap.add_argument(
+        "--save-frames", type=int, default=0,
+        help="save ego RGB for the first N task ids (0 disables; useful for Rerun)",
+    )
     args = ap.parse_args()
     ck = torch.load(args.ckpt, map_location=args.device)
     cfg = load_config(overrides=ck["cfg"])
@@ -146,7 +154,8 @@ def main():
             model, cfg, split, args.n, args.device,
             wipe_context=args.wipe_context,
             reset_between_attempts=cfg.model.reset_between_attempts,
-            noise_seed=args.noise_seed)
+            noise_seed=args.noise_seed,
+            save_frames=args.save_frames)
         tag = f"{split}_wipe" if args.wipe_context else split
         np.savez_compressed(
             os.path.join(args.out, f"eval_{tag}.npz"),
@@ -155,7 +164,16 @@ def main():
             meta=json.dumps({"ckpt": args.ckpt, "split": split, "n": args.n,
                              "wipe": args.wipe_context,
                              "train_steps": ck.get("steps", -1),
-                             "noise_seed": args.noise_seed}))
+                             "noise_seed": args.noise_seed,
+                             "save_frames": args.save_frames,
+                             "dt_ctrl": cfg.sim.dt_ctrl,
+                             "retry_x": cfg.sim.retry_x,
+                             "succ_margin": cfg.sim.succ_margin,
+                             "body_r": cfg.sim.body_r,
+                             "body_hh": cfg.sim.body_hh,
+                             "info_gate_enabled": cfg.task.info_gate_enabled,
+                             "info_probe_distance": cfg.task.info_probe_distance,
+                             "info_probe_ramp": cfg.task.info_probe_ramp}))
         print(f"saved eval_{tag}.npz  (T={rec['clear'].shape[0]})", flush=True)
 
 
