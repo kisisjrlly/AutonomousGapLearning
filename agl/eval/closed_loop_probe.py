@@ -173,6 +173,7 @@ def run(
 
     phase = torch.zeros(env.n, dtype=torch.long)
     dwell = torch.zeros(env.n, dtype=torch.long)
+    phase_steps = torch.zeros(env.n, dtype=torch.long)
     brake_start_x = torch.full((env.n,), float("nan"))
     brake_entry_speed = torch.full((env.n,), float("nan"))
     brake_peak_x = torch.full((env.n,), -float("inf"))
@@ -207,6 +208,13 @@ def run(
                 break
             phase[entering] = 1
             dwell[entering] = 0
+            phase_steps[entering] = 0
+
+        active = phase < 3
+        phase_steps[active] += 1
+        if (phase_steps[active] > phase_limit).any():
+            reason = "phase_timeout"
+            break
 
         clear_pre = collision.clearance(
             st["p"], st["q"], env.task, env.bpts,
@@ -288,6 +296,7 @@ def run(
         if brake_done.any():
             phase[brake_done] = 2
             dwell[brake_done] = 0
+            phase_steps[brake_done] = 0
 
         retreating = phase == 2
         retreat_ready = retreating & ready(st, home)
@@ -298,6 +307,7 @@ def run(
         recovered = retreating & (dwell >= dwell_steps)
         if recovered.any():
             phase[recovered] = 3
+            phase_steps[recovered] = 0
 
         if (phase == 3).all():
             break
