@@ -26,6 +26,7 @@ README.md                 研究纲领（§1–§17，必读）
 docs/tech-selection.md    技术选型与设计决策（仿真器/传感器/动作空间/模型/训练/消融）
 docs/PIPELINE.md          各阶段运行手册（本文件的下游）
 docs/REAL_FLIGHT_ADAPTATION.md  真机无碰撞在线适应与验收规范
+docs/INFO_GATED_GAPENV_V2.md     当前信息门控刚体任务设计与 smoke check
 docs/PROJECT_LOG.md       时间线历史记录
 paper/outline.md          论文结构大纲
 paper/intro-draft.md      Introduction 初稿
@@ -40,6 +41,7 @@ agl/models/policy.py      CNN+GRU 策略、非对称批评家、辅助头
 agl/train/ppo.py          循环 PPO（BPTT、GAE、辅助标签扫描）
 agl/train/train.py        训练入口（rollout 收集 + 课程 + 日志/存档）
 agl/eval/evaluate.py      评估：固定种子任务库、三划分、轨迹记录、上下文清空
+agl/eval/verify_info_gate.py  无训练的成对 latent-wind 环境 smoke check
 agl/eval/metrics.py       README §12 全指标（离线的 attempt 分段 + 统计）
 agl/analysis/stats.py     bootstrap CI / 比例检验 / 配对检验
 agl/analysis/make_paper_data.py  聚合所有 eval → results/paper/summary.json（论文数据源）
