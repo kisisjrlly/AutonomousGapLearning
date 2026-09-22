@@ -170,4 +170,5 @@
   并与同一动作随后控制周期内的 `rec_collision` 对齐。旧 NPZ 禁止继续用于该统计。
 - 去除 reward shaping 中凭空的 3 m/s² 最小制动下界；该项仍只是训练 proxy，不是安全保证。
 - 下一步：实现低速刚体 probe→stop→retreat，保存 post-retreat snapshot，并从同一物理状态执行
+- 2026-09-22：新增 `same_state_intervention.py`，为配对任务保存相同初态和 probe 后状态快照；当前只验证实验 plumbing，不是适应结果。
   correct / removed / swapped history intervention。

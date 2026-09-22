@@ -55,6 +55,7 @@ hover 控制后，pair 的横向速度应产生可测分叉。这个检查只验
 后续必须完成：
 
 1. 低速刚体 probe → stop → retreat 的零接触脚本/优化器基线；
+   `agl.eval.same_state_intervention` 已提供相同初态/匹配任务的分支快照准备，尚未注入策略历史。
 2. 保存 post-retreat 物理 snapshot；
 3. 从同一 snapshot 分支 correct / removed / swapped history；
 4. 将短期状态估计 memory 与跨尝试 task memory 分离，避免简单 GRU wipe 的混杂；
