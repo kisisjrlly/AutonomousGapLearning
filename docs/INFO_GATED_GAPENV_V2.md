@@ -58,7 +58,7 @@ hover 控制后，pair 的横向速度应产生可测分叉。这个检查只验
    `agl.eval.same_state_intervention` 已提供相同初态/匹配任务的分支快照准备，尚未注入策略历史。
    `GapEnv.snapshot()/restore()` 现在覆盖任务、物理状态、延迟队列、观测偏置、frame、尝试 bookkeeping 和 Torch RNG；确定性回放测试通过后，才允许进入三分支 history intervention。
    probe 快照准备现在逐步检查 `done/collision` 和最小净空；一旦发生终止、自动 reset 或接触，工具直接失败，不保存 post-probe 结果。
-   `agl.eval.safe_probe_retreat` 提供真实 CTBR 刚体 rollout，但目前只是开环指令序列：`stop` 是悬停推力而非速度闭环，backward-pitch retreat 结束时尚未停稳。`safe_count` 仅表示记录区间无接触且未终止，不能作为恢复状态、安全控制器或完整协议的验收。`protocol_completed` 明确为 false。
+   旧开环实现已移至 `agl.eval.legacy_open_loop_probe_retreat`，`safe_probe_retreat` 仅保留弃用兼容入口；当前受控恢复基线是 `agl.eval.closed_loop_probe` 的非零速度 dynamic braking 版本。
 2. 保存 post-retreat 物理 snapshot；
 3. 从同一 snapshot 分支 correct / removed / swapped history；
 4. 将短期状态估计 memory 与跨尝试 task memory 分离，避免简单 GRU wipe 的混杂；
