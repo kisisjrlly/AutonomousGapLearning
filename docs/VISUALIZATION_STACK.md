@@ -140,3 +140,13 @@ v1 首先解决“真实测试 episode 可审计”的问题，不把 Rerun 注�
 - 相同物理状态下第一步动作差异。
 
 届时可视化本身仍然只是诊断与因果实验审计工具，不替代安全统计或正式验收。
+
+
+## 2026-09-22 dynamic-braking v2 additions
+
+`closed_loop_probe.py` recordings now include `rec_frames` and `rec_obs_vec`. Rerun renders the dynamic brake
+trigger plane and separates `APPROACH_PROBE`, `BRAKE` and `RETREAT` phases. This allows direct inspection of
+“what the actor could see” alongside privileged state used by the scripted baseline.
+
+The current baseline is still privileged feedback. Viewer overlays do not turn privileged data into policy input and
+do not constitute safety certification.
