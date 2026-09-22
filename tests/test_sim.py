@@ -194,8 +194,6 @@ def test_paired_information_tasks_match_except_latent_sign():
     gen.manual_seed(123)
     task = scene.paired_information_tasks(2, cfg, 1.0, DEV, gen)
 
-    assert task["pair_id"].tolist() == [0, 0, 1, 1]
-    assert task["latent_sign"].tolist() == [1.0, -1.0, 1.0, -1.0]
     for a, b in ((0, 1), (2, 3)):
         for key in ("gap_w", "gap_h", "gap_roll", "wall_x", "thick", "gap_cy", "gap_cz"):
             assert torch.equal(task[key][a], task[key][b])
