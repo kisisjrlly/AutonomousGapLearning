@@ -11,22 +11,19 @@ from ..sim.safety import replay_trace
 
 def replay_npz(path, reaction_time=.05, margin=0.):
     data = np.load(path)
-    required = ('rec_clear', 'rec_v')
+    required = ('rec_clear_pre', 'rec_v', 'rec_collision', 'task_twr')
     missing = [k for k in required if k not in data]
     if missing:
         raise KeyError(f"missing fields: {missing}")
-    clear = torch.from_numpy(data['rec_clear'])
+    clear = torch.from_numpy(data['rec_clear_pre'])
     speed = torch.from_numpy(data['rec_v'])[..., 0]
-    # Evaluation trajectories use per-task hidden dynamics when available.
-    if 'task_mass' in data and 'task_twr' in data:
-        accel = (torch.from_numpy(data['task_twr']) * 9.81 - 9.81)
-        accel = accel.clamp_min(0.)
-        while accel.ndim < clear.ndim:
-            accel = accel.unsqueeze(0)
-    else:
-        raise KeyError('task_twr and task_mass required; no assumed braking authority')
+    contact_after = torch.from_numpy(data['rec_collision']) > 0.5
+    accel = (torch.from_numpy(data['task_twr']) * 9.81 - 9.81).clamp_min(0.)
+    while accel.ndim < clear.ndim:
+        accel = accel.unsqueeze(0)
     # A signed x speed is the forward component in this environment.
-    out = replay_trace(clear, speed, accel, reaction_time, margin=margin)
+    out = replay_trace(clear, speed, accel, reaction_time,
+                       contact_after=contact_after, margin=margin)
     return {k: v for k, v in out.items() if not torch.is_tensor(v)}
 
 
