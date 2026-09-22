@@ -50,14 +50,25 @@ def prepare(n_pairs=4, steps=12, device='cpu', seed=20260922):
     action[:, 0] = dynamics.hover_thrust_action(env.task['dyn'])
     env.prev_action = action.clone(); env.delay_buf[:] = action.unsqueeze(1)
     pre = _clone_state(env)
+    probe_min_clear = torch.full((2*n_pairs,), float('inf'), device=device)
+    probe_done = torch.zeros(2*n_pairs, dtype=torch.bool, device=device)
+    probe_contact = torch.zeros_like(probe_done)
     for _ in range(steps):
-        env.step(action)
+        _, _, done, info = env.step(action)
+        probe_min_clear = torch.minimum(probe_min_clear, info['clearance'])
+        probe_done |= done
+        probe_contact |= info['collision']
+        if probe_done.any() or probe_contact.any():
+            raise RuntimeError('probe was not safe: terminal/reset/contact occurred')
     post = _clone_state(env)
     pair_delta = {k: float((v[0::2] - v[1::2]).abs().max().item())
                   for k, v in post.items() if torch.is_tensor(v)}
     return {'scope': 'same_state_branch_preparation_NOT_adaptation_evidence',
             'n_pairs': n_pairs, 'steps': steps, 'seed': seed,
             'pre_state': pre, 'post_state': post,
+            'probe_min_clearance': probe_min_clear.detach().cpu(),
+            'probe_done': probe_done.detach().cpu(),
+            'probe_contact': probe_contact.detach().cpu(),
             'post_pair_max_abs_delta': pair_delta,
             'probe_wind': env.task['dyn']['probe_wind'].detach().cpu(),
             'state_schema': sorted(pre)}

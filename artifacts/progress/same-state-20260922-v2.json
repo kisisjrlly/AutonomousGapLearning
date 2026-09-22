@@ -1,0 +1,24 @@
+{
+  "scope": "same_state_branch_preparation_NOT_adaptation_evidence",
+  "n_pairs": 4,
+  "steps": 12,
+  "seed": 20260922,
+  "post_pair_max_abs_delta": {
+    "p": 0.026655111461877823,
+    "v": 0.1727312207221985,
+    "q": 0.0,
+    "w": 0.0,
+    "thrust": 0.0,
+    "wind": 0.0,
+    "spec_force": 0.5554713010787964
+  },
+  "state_schema": [
+    "p",
+    "q",
+    "spec_force",
+    "thrust",
+    "v",
+    "w",
+    "wind"
+  ]
+}

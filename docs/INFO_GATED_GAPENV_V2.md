@@ -57,6 +57,7 @@ hover 控制后，pair 的横向速度应产生可测分叉。这个检查只验
 1. 低速刚体 probe → stop → retreat 的零接触脚本/优化器基线；
    `agl.eval.same_state_intervention` 已提供相同初态/匹配任务的分支快照准备，尚未注入策略历史。
    `GapEnv.snapshot()/restore()` 现在覆盖任务、物理状态、延迟队列、观测偏置、frame、尝试 bookkeeping 和 Torch RNG；确定性回放测试通过后，才允许进入三分支 history intervention。
+   probe 快照准备现在逐步检查 `done/collision` 和最小净空；一旦发生终止、自动 reset 或接触，工具直接失败，不保存 post-probe 结果。
 2. 保存 post-retreat 物理 snapshot；
 3. 从同一 snapshot 分支 correct / removed / swapped history；
 4. 将短期状态估计 memory 与跨尝试 task memory 分离，避免简单 GRU wipe 的混杂；
