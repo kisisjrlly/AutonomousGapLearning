@@ -60,17 +60,22 @@ def _log_static(rr, ep: EvalEpisode):
         np.array([[wx,y,z], [wx+th,y,z]], dtype=float)
         for y, z in ((y0,z0), (y1,z0), (y1,z1), (y0,z1))
     ]
+    wall_strips = [front, back, *corners]
     rr.log(
         "world/wall/frame",
-        rr.LineStrips3D([front, back, *corners], colors=[[105,115,125]], radii=0.012),
+        rr.LineStrips3D(
+            wall_strips,
+            colors=[[105,115,125]] * len(wall_strips),
+            radii=[0.012] * len(wall_strips),
+        ),
         static=True,
     )
     rr.log(
         "world/wall/gap",
         rr.LineStrips3D(
             [gap_outline(task, wx), gap_outline(task, wx + th)],
-            colors=[[210,55,70]],
-            radii=0.018,
+            colors=[[210,55,70], [210,55,70]],
+            radii=[0.018, 0.018],
         ),
         static=True,
     )
@@ -82,15 +87,27 @@ def _log_static(rr, ep: EvalEpisode):
         [min(-1.0, float(ep.rec["p"][:,0].min())-.3), y1, 0],
         [min(-1.0, float(ep.rec["p"][:,0].min())-.3), y0, 0],
     ], dtype=float)
-    rr.log("world/ground/bounds", rr.LineStrips3D([ground], colors=[[130,130,130]], radii=0.006), static=True)
+    rr.log(
+        "world/ground/bounds",
+        rr.LineStrips3D([ground], colors=[[130,130,130]], radii=[0.006]),
+        static=True,
+    )
 
     retry_x = float(meta.get("retry_x", 1.2))
     retry = rect_yz(retry_x, y0, y1, .2, z1)
-    rr.log("world/planes/retry", rr.LineStrips3D([retry], colors=[[80,150,220]], radii=0.008), static=True)
+    rr.log(
+        "world/planes/retry",
+        rr.LineStrips3D([retry], colors=[[80,150,220]], radii=[0.008]),
+        static=True,
+    )
 
     succ_x = wx + th + float(meta.get("succ_margin", .4))
     success = rect_yz(succ_x, y0, y1, .2, z1)
-    rr.log("world/planes/success", rr.LineStrips3D([success], colors=[[50,170,90]], radii=0.008), static=True)
+    rr.log(
+        "world/planes/success",
+        rr.LineStrips3D([success], colors=[[50,170,90]], radii=[0.008]),
+        static=True,
+    )
 
     if meta.get("info_gate_enabled", False):
         start = wx - float(meta.get("info_probe_distance", 1.0))
@@ -99,8 +116,8 @@ def _log_static(rr, ep: EvalEpisode):
             "world/probe_zone",
             rr.LineStrips3D(
                 [rect_yz(start, y0, y1, .2, z1), rect_yz(active, y0, y1, .2, z1)],
-                colors=[[235,180,40]],
-                radii=0.012,
+                colors=[[235,180,40], [235,180,40]],
+                radii=[0.012, 0.012],
             ),
             static=True,
         )
@@ -121,6 +138,7 @@ def log_episode(ep: EvalEpisode, out: str | Path | None = None, spawn: bool = Fa
 
     _log_static(rr, ep)
     dt = float(ep.meta.get("dt_ctrl", .025))
+    body_r = float(ep.meta.get("body_r", .16))
     last_phase = None
 
     for i in range(ep.steps):
@@ -135,7 +153,7 @@ def log_episode(ep: EvalEpisode, out: str | Path | None = None, spawn: bool = Fa
 
         rr.log(
             "world/drone/body",
-            rr.LineStrips3D([_body_circle(p, q)], colors=[color], radii=0.016),
+            rr.LineStrips3D([_body_circle(p, q, radius=body_r)], colors=[color], radii=[0.016]),
         )
         axes = _body_axes(p, q)
         rr.log(
@@ -148,15 +166,20 @@ def log_episode(ep: EvalEpisode, out: str | Path | None = None, spawn: bool = Fa
         )
         rr.log(
             "world/drone/center",
-            rr.Points3D([p], colors=[color], radii=.055, labels=[phase]),
+            rr.Points3D([p], colors=[color], radii=[.055], labels=[phase]),
         )
-        rr.log(
-            "world/trajectory",
-            rr.LineStrips3D([ep.rec["p"][:i+1]], colors=[[55,120,195]], radii=.012),
-        )
+        if i > 0:
+            rr.log(
+                "world/trajectory",
+                rr.LineStrips3D(
+                    [ep.rec["p"][:i+1]], colors=[[55,120,195]], radii=[.012]
+                ),
+            )
         rr.log(
             "world/vectors/velocity",
-            rr.LineStrips3D([np.stack([p, p + .25*v])], colors=[[30,190,210]], radii=.014),
+            rr.LineStrips3D(
+                [np.stack([p, p + .25*v])], colors=[[30,190,210]], radii=[.014]
+            ),
         )
 
         activation = ep.probe_activation(i)
@@ -167,9 +190,14 @@ def log_episode(ep: EvalEpisode, out: str | Path | None = None, spawn: bool = Fa
                 rr.LineStrips3D(
                     [np.stack([p, p + .30*activation*probe_wind])],
                     colors=[[235,180,40]],
-                    radii=.018,
+                    radii=[.018],
                 ),
             )
+        else:
+            # Rerun keeps the last value of an entity on a timeline. Explicitly
+            # clear the privileged vector when the vehicle retreats out of the
+            # information gate so a stale arrow cannot look like a current force.
+            rr.log("world/vectors/probe_wind", rr.Clear(recursive=False))
 
         speed = float(np.linalg.norm(v))
         rr.log("telemetry/speed_mps", rr.Scalars(speed))
