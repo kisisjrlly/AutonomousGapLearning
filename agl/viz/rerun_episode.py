@@ -130,6 +130,18 @@ def _log_static(rr, ep: EvalEpisode):
             static=True,
         )
 
+    if "probe_wall_distance" in meta:
+        brake_x = wx - float(meta["probe_wall_distance"])
+        rr.log(
+            "world/planes/brake_trigger",
+            rr.LineStrips3D(
+                [rect_yz(brake_x, y0, y1, .2, z1)],
+                colors=[[220,75,65]],
+                radii=[0.015],
+            ),
+            static=True,
+        )
+
 
 def log_episode(ep: EvalEpisode, out: str | Path | None = None, spawn: bool = False):
     """Write an episode to an RRD file or stream it to a local Viewer."""
