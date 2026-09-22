@@ -24,8 +24,10 @@ attempt 状态机、辅助标签扫描、PPO 端到端冒烟、**穿墙回归**�
   rew_mean/各 loss/ep/* 指标）、`ckpt_latest.pt`（每 50 迭代）、`ckpt_final.pt`、`config.yaml`、
   `GIT_COMMIT`、`tb/`。
 
-**推荐做法**：不要单独调 train.py，直接跑 `scripts/run_campaign.sh`（它按序跑 7 个 run，
-每 run 训练完自动评估，带断点续跑与崩溃重试）。自定义预算：`bash scripts/run_campaign.sh 200000000`。
+**当前不要直接启动旧 7-run campaign。** `scripts/run_campaign.sh` 已降级为 legacy baseline，并要求
+显式设置 `AGL_ALLOW_LEGACY_CAMPAIGN=1`。当前关键路径是 information-gated GapEnv v2：
+先让任务包含只有安全接近后才能辨识的隐藏因素，再做同状态 history intervention。旧 campaign
+仅用于需要复现实验基线时运行，不再是默认下一步。
 
 ### 关键训练语义（勿改坏）
 - **课程 λ**：`train.py curriculum()` —— 可行任务成功率 EMA（ema=0.98）> up_thresh(0.70) 则
@@ -35,6 +37,15 @@ attempt 状态机、辅助标签扫描、PPO 端到端冒烟、**穿墙回归**�
   `reset_between_attempts` 为真则尝试中止时也清零（消融变体）。
 - **碰撞罚课程化**：λ<0.5 时碰撞罚从 −3/−1.5 退火到 −10/−4（探索脚手架）。
 - **辅助标签**：0.5 s 内碰撞（掩码：窗口内确知才标负例）；本次尝试成败（中止=未成功，绝不=必然碰撞）。
+
+### GapEnv v2：信息门控最小物理任务
+
+`TaskCfg.info_gate_enabled=True` 时，场景增加隐藏局部横风 `probe_wind`。它在远离窄缝时严格
+为零，只在距墙 `info_probe_distance` 内平滑激活，所以策略不能从初始 RGB 或显式任务字段读取
+其符号，只能在安全接近后从 IMU/VIO/运动响应中推断。默认关闭，旧 checkpoint 行为不变。
+
+`scene.paired_information_tasks()` 可生成除隐藏风符号外其他随机量完全相同的成对任务。
+详见 `docs/INFO_GATED_GAPENV_V2.md`。
 
 ## 阶段 2：仿真机制与安全评估
 
