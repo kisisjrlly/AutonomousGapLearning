@@ -72,9 +72,7 @@ terminal_speed
 
 plus audit-only values such as the abort position and number of control steps.
 
-V0 context will use previous AttemptSpec/outcome pairs. V1 will replace or
-augment that summary with real sensor sequences (grayscale camera, IMU, VIO and
-executed action).
+V0 context will use previous AttemptSpec/outcome pairs **with gap geometry held fixed** so the first experiment isolates hidden dynamics/context adaptation. V1 will randomize geometry and add real sensor sequences (grayscale camera, IMU, VIO and executed action).
 
 ## 4. World-model query
 
@@ -162,6 +160,7 @@ Inspect that:
 - spec and target fields are finite;
 - train/val/test task IDs do not overlap;
 - `audit_*` values are not returned by AttemptDataset samples;
+- V0 metadata reports `geometry_varied=false`;
 - outcome distribution contains useful diversity (not 100% success or 100%
   contact/abort).
 
