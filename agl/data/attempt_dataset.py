@@ -10,7 +10,7 @@ from ..attempt.spec import SPEC_FIELDS
 from ..attempt.outcome import TARGET_FIELDS
 
 
-MODEL_KEYS = ("task_id", "attempt_index", "spec", "target")
+REQUIRED_KEYS = ("task_id", "attempt_index", "spec", "target")
 
 
 def split_task_ids(task_ids, *, train_frac=.8, val_frac=.1, seed=0):
@@ -42,7 +42,7 @@ class AttemptDataset:
     def __init__(self, path):
         self.path = Path(path)
         d = np.load(self.path, allow_pickle=False)
-        missing = [k for k in MODEL_KEYS if k not in d]
+        missing = [k for k in REQUIRED_KEYS if k not in d]
         if missing:
             d.close()
             raise KeyError(f"missing dataset arrays: {missing}")
@@ -69,11 +69,17 @@ class AttemptDataset:
         return len(self.task_id)
 
     def __getitem__(self, index):
+        """Return only values eligible for model training."""
+        return {
+            "spec": self.spec[index],
+            "target": self.target[index],
+        }
+
+    def record_metadata(self, index):
+        """Grouping metadata; never feed these IDs into the world model."""
         return {
             "task_id": int(self.task_id[index]),
             "attempt_index": int(self.attempt_index[index]),
-            "spec": self.spec[index],
-            "target": self.target[index],
         }
 
     @property
