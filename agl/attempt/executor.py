@@ -136,6 +136,10 @@ def execute_attempt_batch(
         (n,), float(cfg.sim.retry_x - 0.25), dtype=torch.float32, device=dev
     )
     home = _sync_initial_state(env, specs, start_x)
+    # Keep immutable task references: GapEnv auto-resets terminal rows, which
+    # replaces env.task in-place after success/contact.
+    gap_cy_ref = env.task["gap_cy"].clone()
+    gap_cz_ref = env.task["gap_cz"].clone()
 
     entry_speed = _spec_tensor(specs, "entry_speed", dev)
     accel_early = _spec_tensor(specs, "accel_early", dev)
@@ -278,8 +282,8 @@ def execute_attempt_batch(
         terminal_speed[unfinished] = st["v"][unfinished].norm(dim=-1)
         phase[unfinished] = 2
 
-    lateral = y_at_peak - env.task["gap_cy"]
-    vertical = z_at_peak - env.task["gap_cz"]
+    lateral = y_at_peak - gap_cy_ref
+    vertical = z_at_peak - gap_cz_ref
     stop_dist = torch.zeros(n, device=dev)
     valid_abort = aborted & torch.isfinite(max_x_after_abort)
     stop_dist[valid_abort] = (
