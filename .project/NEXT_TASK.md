@@ -1,87 +1,12 @@
-# Next Task Guide
+# 下一步：先验证本轮数据修正，再实现可证伪的预测基准
 
-## Current execution — 2026-10-04
+以 `HANDOFF.md`、`docs/REVIEW_E5753C7.md`、`docs/CONTEXTUAL_WORLD_MODEL_PLAN.md` 为准。
 
-**Default route:** Attempt-level Contextual World Model.
+1. 复跑本轮针对性测试及旧全量测试，记录 CPU/CUDA 的差异。
+2. 用新的路径采集 V1 小数据，并打开真实轨迹。V0 必须重采，不能把 target 改名为 context。
+3. 检查候选通过/中止/接触分布、恢复历史是否有足够信息、缺失标签比例、参数敏感性。只通过程序测试不等于数据足够学习。
+4. 在冻结数据划分下实现小型无上下文/上下文预测模型，并加简单回归或GP/在线辨识对照。不要启动旧 PPO。
 
-The old GRU verification / reward-shaping / recipe_v3 decision tree is retired.
-Do not wait for `mean_diff`, do not restart the 300M-step PPO campaign, and do
-not choose a new policy architecture from the old GRU diagnostics.
+必须保留：当前查询观测、执行协议、相同控制器/阈值/预算；标签与输入分开；独立试验不假称连续自主重试。
 
-Read first:
-
-1. `HANDOFF.md`
-2. `docs/CONTEXTUAL_WORLD_MODEL_PLAN.md`
-3. `docs/PIPELINE.md`
-
-## What is implemented now
-
-- `agl/attempt/spec.py`: 6-D AttemptSpec
-- `agl/attempt/outcome.py`: standard AttemptOutcome
-- `agl/attempt/executor.py`: privileged GapEnv candidate executor
-- `agl/data/attempt_dataset.py`: grouped NPZ dataset + task-level split
-- `agl/data/generate_attempt_dataset.py`: attempt dataset generator
-
-These are data-generation foundations only. There is **no contextual world
-model, no CEM planner and no learned retry yet**.
-
-## Immediate local verification
-
-```bash
-cd /home/zhaoguodong/work/code/AutonomousGapLearning
-git pull origin main
-
-PY=/home/zhaoguodong/miniconda3/bin/python3
-
-$PY -m pytest tests/ -q
-$PY -m pytest tests/test_attempt_schema.py tests/test_attempt_dataset.py -q
-
-mkdir -p datasets
-$PY -m agl.data.generate_attempt_dataset \
-  --out datasets/attempt_v0_smoke.npz \
-  --tasks 16 \
-  --attempts-per-task 8 \
-  --batch-tasks 8 \
-  --device cpu
-```
-
-Report:
-
-- total pytest pass/fail/warnings;
-- generated record count;
-- success / recovered / contact rates;
-- whether every task has exactly 8 attempts;
-- whether all spec/target values are finite;
-- whether train/val/test task IDs are disjoint;
-- any executor timeout/reset/contact anomaly.
-
-## Go / No-Go
-
-**GO:** dataset is valid, task grouping is correct, outcomes are diverse enough
-to train a predictor.
-
-**NO-GO:** task leakage, non-finite labels, reset contamination, or a degenerate
-outcome distribution. Fix the dataset/executor first.
-
-## Next implementation after GO
-
-Only then implement:
-
-1. `NoContextWorldModel`
-2. `ContextWorldModel`
-3. identical task-level train/val/test split
-4. prediction benchmark on unexecuted candidates
-5. No / Correct / Swapped / Shuffled Context evaluation
-
-Do **not** implement a planner before Correct Context gives a meaningful
-held-out prediction improvement over No Context.
-
-## Legacy status
-
-Keep for final-paper baselines, but do not extend by default:
-
-- `agl/models/policy.py`
-- `agl/train/ppo.py`
-- `agl/train/train.py`
-- `scripts/run_campaign.sh`
-- recipe_v2 / recipe_v3 experiments
+之后才实现规划器与实际重新定位。真机控制、机载几何感知、运行时安全保护尚未验收，不因单个动画或小样本成功而开启窄缝实飞。

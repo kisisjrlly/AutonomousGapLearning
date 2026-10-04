@@ -1,232 +1,93 @@
-# Contextual World Model Plan
+# 尝试级上下文预测与自主重试：修订方案
 
-> Status: **new default research route (2026-10-04)**.
-> Legacy recurrent PPO remains a baseline only. This document defines the next
-> implementation path under the actual resource constraint: one 16 GB GPU,
-> several months, real drone and test site available.
+日期：2026-10-04。取代 e5753c7 的同名计划。目标不变：让真实无人机根据此前安全经历重新选择穿缝方式。
 
-## 1. Final capability
+## 1. 论文要证明什么，而不是先规定“论文等级”
 
-The target is not "retry the same maneuver until it works". The target is:
+核心假设：在相同当前观测、控制器及预算下，真实交互证据改善对未执行尝试的预测，并使后续方案选择更有效。不同起点、路径切线和速度曲线是用户真正需要的泛化维度；不是必须扩展到十种任务。
 
-1. observe an unseen gap and current vehicle condition;
-2. use a learned predictive model to score several candidate traversal attempts;
-3. execute one candidate only if an independent recovery/safety layer permits it;
-4. if the attempt becomes unpromising, abort before contact and recover behind
-   the retry plane;
-5. add the *actual observed outcome* to context;
-6. predict unexecuted candidates again;
-7. autonomously change start point, entry direction, speed and acceleration
-   profile for the next attempt;
-8. pass safely, or give up if no admissible candidate remains.
+三个证据层次分别验证：预测的增益、方案选择的增益、实际任务的增益。不能从“第二次成功率上升”直接跳到第一层，因为有重试样本选择偏差和额外交互预算。
 
-The scientific causal chain is:
+当前输入输出记为 `predict(current_observation, known_geometry_if_available, candidate, protocol, context)`。
 
-```text
-real experience
-  -> world-model prediction changes
-  -> prediction of unexecuted candidates becomes more accurate
-  -> next attempt changes
-  -> real task performance improves
-```
+## 2. 正确使用术语
 
-A change of action alone is not sufficient evidence.
+V0 先建立**控制器条件下的尝试结果代理模型**。六个参数预测几个最终标量，不自动成为通用世界模型。后续可增加短时动作条件状态/传感器响应预测，检验滚动误差、区间校准和未执行动作的预测。
 
-## 2. First attempt space
+当前支持/查询式监督训练属于显式训练的上下文适应。可以叫上下文学习，但不能声称“未经专门训练涌现”“GPT-3 时刻”。元学习不是“伪 ICL”。相关先例：RL²（arXiv:1611.02779）、General-Purpose In-Context Learning by Meta-Learning Transformers（arXiv:2212.04458）。
 
-V0 deliberately uses only six dimensions:
+小型序列编码器、CEM 和模型集成本身都不是充分创新点。PETS（arXiv:1805.12114）、智能试错（Nature, doi:10.1038/nature14422）和 SafeOpt（PMLR 37:997–1005）都是必须认真对照的方向。
 
-```text
-AttemptSpec =
-  start_y_offset
-  start_z_offset
-  entry_yaw
-  entry_speed
-  accel_early
-  accel_late
-```
+## 3. 数据：输入、证据、标签、审计分开
 
-The start offsets are relative to the current gap center on the safe side of the
-retry plane. The acceleration values shape the forward-speed command before and
-after the information-zone split.
+- 查询输入：候选六参数、当前模拟机载观测、已知的执行协议。默认固定几何。
+- 上下文：较早已执行且无接触恢复的试验，其模拟机载观测—请求指令—下一观测；不使用历史净空/漂移真值标签。
+- 监督目标：本次实际执行结果。可以来自仿真，但要明确测量定义和有效掩码。
+- 元数据：任务/物理组/尝试编号、角色、种子、配置、代码散列。不作为网络输入。
+- 审计真值：完整任务参数 JSON、扰动类别等。单独命名，不交给模型。
 
-Do **not** add splines, dense waypoints or raw motor trajectories until the
-six-dimensional version is validated.
+`thrust/tmax` 并未确认可由真机直接测得，因此新证据只取旧 `obs_vec` 的前17维。低层延迟后的指令会留在轨迹审计中；不能假称它是实际电机推力。真机将来必须记录请求、限幅/否决、飞控确认和传感器时间戳，未知执行量保留缺失。
 
-## 3. Attempt outcome
+当前试验是一组同一物理设置下的**独立夹具初始化试验**。序号是数据顺序，不是“机器人自主试了八次”。跨试验状态转移和安全移动到新起点尚未实现。
 
-The simulation data generator records:
+## 4. 六个参数必须真的控制不同方案
 
-```text
-success
-recovered
-contact
-aborted
-lateral_drift
-vertical_drift
-min_clearance
-stopping_distance
-max_tilt
-terminal_speed
-```
+`start_y_offset/start_z_offset`：固定参考平面的起点偏移（V0 使用已知几何）。
 
-plus audit-only values such as the abort position and number of control steps.
+`entry_yaw`：V1 为墙前平面处路径切线角；通过 Hermite 参考路径落实，不再只是改变初始机头。实际跟踪误差仍需验收。
 
-V0 context will use previous AttemptSpec/outcome pairs **with gap geometry held fixed** so the first experiment isolates hidden dynamics/context adaptation. V1 will randomize geometry and add real sensor sequences (grayscale camera, IMU, VIO and executed action).
+`entry_speed`：参考速度上限，不等于实际入缝速度。`accel_early/late` 是参考速度变化率，不是直接保证实际机体加速度。前段只用部分速度上限，给后段加速度保留可观察作用。
 
-## 4. World-model query
+路径、控制器、阈值和时间预算都需要版本化。更换控制器后旧数据不再自动描述新闭环，必须重新采集或把可观测的控制器版本纳入问题定义。
 
-The learned predictor will eventually implement:
+## 5. 标签定义与提前中止
 
-```math
-\hat{Y}=W_\theta(C,\xi)
-```
+`success` 表示指定执行器及预算下的实际完成，不表示几何/物理上存在或不存在通过方法。
 
-where:
+`recovered` 表示执行了返回动作并满足停稳门槛；未启动返回时无该标签。中止后回到安全区也不能证明同一方案继续一定会撞。
 
-- `C` is the history of **previous attempts from the same physical task**;
-- `\xi` is an unexecuted candidate AttemptSpec;
-- `\hat{Y}` predicts candidate outcome and uncertainty.
+`stopping_distance` 仅在中止后、发生接触之前，实际观察到前向速度降到非正时有效；数值是控制周期采样的前向超调。不满足时用 mask，不能填0当成短刹车距离。
 
-The first model should be small (single-GPU friendly): a compact attempt encoder,
-2-4 layer context transformer/GRU and MLP outcome head. Do not train a video
-generator.
+`lateral_drift/vertical_drift` 为最大前向进展处相对缝中心的偏差（历史字段名保留），不是全程积分漂移。`min_clearance/max_tilt` 是有限采样诊断值。必须报告采样频率、机体近似和数值误差，不将其视为几何安全下界。
 
-## 5. Dataset rules
+环境终止的真实状态必须在自动重置前抓取。超时、接触、数值异常属于不同状态，所有样本保留；异常样本目标无效，不得用10米净空等伪造安全标签。
 
-The dataset is organized by physical task:
+## 6. 模型与单卡资源
 
-```text
-Task 0
-  Attempt 0
-  Attempt 1
-  ...
-Task 1
-  Attempt 0
-  Attempt 1
-  ...
-```
+先用低成本回归/GP和小型 GRU/Transformer 做预测，不以参数量或模型名称定贡献。训练前测量一次小批量前向/反向的显存与耗时，再确定 batch、序列长度和总预算。16GB 不足以单独推断训练需要几天，也不能推出 Jetson 上一定实时。
 
-A task fixes geometry, hidden dynamics and persistent sensor properties.
-Different attempts explore different AttemptSpec values.
+只在训练组拟合归一化参数；验证组选超参数/区间校准；测试组冻结。缺失 mask 必须同时用于损失和指标，所有对照在相同有效样本集合比较。
 
-Hard rules:
+## 7. 科学对照
 
-- train/validation/test split **by task_id**, never by attempt;
-- `task_id` / `attempt_index` are grouping metadata only and are forbidden as neural-network inputs;
-- hidden simulator parameters use the `audit_` prefix and are forbidden as
-  model inputs;
-- query-attempt outcome must never appear in its context;
-- auto-reset data from a new task must never be appended to the old task;
-- real-flight data must record requested action and actually executed action
-  separately when a safety layer modifies/rejects the request.
+同一查询比较：无历史、正确历史、匹配其他条件但不同隐变量的历史、破坏动作—响应对应关系的历史。保持信息量、长度及传感器分布尽可能匹配。
 
-## 6. Current implementation milestone
+不能把“打乱后仍有效”直接判作没有学习；任务可能只需要充分统计量。需要分别检验动作错配、时序置换、状态估计记忆和任务知识。
 
-Implemented foundation:
+强基线至少覆盖：固定鲁棒控制/规划、在线辨识或扰动观测器加同一规划器、少样本 GP/贝叶斯参数搜索、无上下文预测器。旧 PPO 不应是主要唯一对照。
 
-- `agl/attempt/spec.py`: AttemptSpec + sampling ranges;
-- `agl/attempt/outcome.py`: standard AttemptOutcome target schema;
-- `agl/attempt/executor.py`: privileged vectorized GapEnv executor for honest
-  candidate rollouts;
-- `agl/data/attempt_dataset.py`: leakage-resistant NPZ storage and task-level
-  splits;
-- `agl/data/generate_attempt_dataset.py`: grouped candidate dataset generator.
+预测指标：连续误差、排序质量、区间校准。任务指标：固定总时间/能耗/尝试预算的累计无接触成功、恢复失败、接触、人工介入和超时。按物理任务或实验日聚类，报告不确定性；不要把每帧当独立样本。
 
-The executor is **simulation data-generation infrastructure**, not the final
-planner, not the learned policy and not a real-flight safety guarantee.
+## 8. 安全与规划
 
-## 7. Immediate validation
+规划器在尝试前比较方案，但运行时保护需要持续工作。目标模型的置信度、三个网络相互一致、当前净空为正都不是安全证书。
 
-Run:
+接近阶段应保留可验证的退出动作；提交穿越前还需验证穿越及前方脱离通道，不能不切实际地要求飞机在窄缝任意位置都能原地掉头。形式化保证必须写清扰动、估计误差、时延和模型假设，未知任意失效不在保证范围内。
 
-```bash
-PY=/home/zhaoguodong/miniconda3/bin/python3
+学习系统不能把保护层拒绝的动作当作“实际执行后失败”。规划成本要包括回撤、转移到新起点及重新加速；真机禁止瞬移。当前代码没有实现这层安全保护或最终多次尝试规划。
 
-$PY -m pytest tests/test_attempt_schema.py tests/test_attempt_dataset.py -q
+## 9. 后续顺序
 
-mkdir -p datasets
-$PY -m agl.data.generate_attempt_dataset \
-  --out datasets/attempt_v0_smoke.npz \
-  --tasks 16 \
-  --attempts-per-task 8 \
-  --batch-tasks 8 \
-  --device cpu
-```
+A. 本版数据/标签/参数和轨迹验收，CUDA 小批次实测；固定任务与控制器，拒绝带缺陷的数据集。
 
-Inspect that:
+B. 小型上下文结果预测器与强简单基线；给出分组留出和历史对照，至少三个训练随机种子（资源不足应透明报告），不承诺任意15%或20%作为发表阈值。
 
-- every task has exactly the requested number of attempts;
-- spec and target fields are finite;
-- train/val/test task IDs do not overlap;
-- `audit_*` values are not returned by AttemptDataset samples;
-- V0 metadata reports `geometry_varied=false`;
-- outcome distribution contains useful diversity (not 100% success or 100%
-  contact/abort).
+C. 增加动作条件短时响应预测与不确定性校准；验证收益不只是任务标签识别。
 
-If outcome diversity is poor, adjust AttemptRanges/executor before training a
-world model.
+D. 相同执行器下接候选规划。简单网格/随机搜索也应先作为基线，不急着扩大 CEM 搜索空间。
 
-## 8. Next commit: prediction benchmark
+E. 完整系统快照与真实连续重试：环境 + 控制器积分/参考/阶段 + 缓存观测 + 模型上下文 + 规划 RNG。仿真中的同状态干预只改任务上下文。
 
-Only after the dataset foundation is verified:
+F. 已验证安全控制下的真机开放空间日志可并行采集。再到软质宽缝、逐步增加难度。机载几何估计、传感器误差和真实控制时延要显式建模；固定几何结果不能冒称未知窄缝视觉泛化。
 
-1. add `NoContextWorldModel`;
-2. add `ContextWorldModel`;
-3. train both on identical task-level splits;
-4. evaluate on *unexecuted candidate attempts*;
-5. compare No Context / Correct Context / Swapped Context / Shuffled Context.
-
-Go criterion for the project (internal engineering threshold, not a publication
-claim): Correct Context should produce a clear held-out prediction improvement
-over No Context without relying on hidden audit metadata.
-
-If it does not, stop before adding a planner.
-
-## 9. Planner comes later
-
-Only after prediction gain is established, add a CEM attempt planner:
-
-```text
-context
-  -> world model
-  -> batch candidate predictions
-  -> score success/clearance/recovery/cost
-  -> independent safety shield
-  -> execute one candidate
-  -> append real outcome to context
-```
-
-The planner is not a learned network in V0.
-
-## 10. Legacy code status
-
-Keep, but do not extend as the default route:
-
-- `agl/models/policy.py`
-- `agl/train/ppo.py`
-- `agl/train/train.py`
-- old 300M-step campaigns
-
-They provide recurrent-policy baselines for the final paper.
-
-Keep and reuse as infrastructure:
-
-- GapEnv and task randomization;
-- substep collision checking;
-- snapshot/restore;
-- dynamic braking/recovery baselines;
-- Rerun visualization.
-
-## 11. Real-flight sequence
-
-Do not start with narrow-gap learning.
-
-1. open-space payload/wind/delay experiments;
-2. verify that context improves prediction of the *next unexecuted motion*;
-3. wide soft gate;
-4. progressively narrower gaps;
-5. full autonomous try -> abort -> recover -> replan -> retry.
-
-The final claim must distinguish empirical zero-contact results from formal
-safety guarantees.
+以数据支持的贡献决定论文表述；不保证录用，不靠增加热门名词扩大主张。

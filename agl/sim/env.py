@@ -220,7 +220,12 @@ class GapEnv:
         return base + alpha.unsqueeze(-1) * local
 
     # ------------------------------------------------------------------- step
-    def step(self, action):
+    def step(self, action, *, capture_transition=False):
+        """Step the environment; optional audit data is captured BEFORE auto-reset.
+
+        capture_transition does not draw randomness or change the physics. Its
+        tensors are privileged training/evaluation data, never policy inputs.
+        """
         cfg, st = self.cfg, self.state
         n, dev = self.n, self.dev
         action = action.clamp(-1.0, 1.0)
@@ -353,6 +358,13 @@ class GapEnv:
             "end_outcome": end_outcome, "terminated": terminated, "truncated": truncated,
             "oob": oob, "gave_up": gave_up & ~contact,
         }
+
+        if capture_transition:
+            info["transition"] = {
+                "state": {k: v.clone() for k, v in st.items()},
+                "applied_action": applied.clone(),
+                "contact_speed": contact_speed.clone(),
+            }
 
         # ---- episode records + auto-reset ----
         done_idx = done.nonzero(as_tuple=False).squeeze(-1)

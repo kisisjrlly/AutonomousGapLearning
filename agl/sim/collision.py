@@ -1,9 +1,10 @@
 """Clearance = min signed distance from drone body surface points to solid world.
 
-World solid = wall slab (spanning the full arena cross-section) minus the gap
-prism, plus the ground plane. SDF subtraction max(d_box, -d_prism) is exact in
-the hole interior and conservative (never overestimates clearance, never
-reports false contact) elsewhere.
+World solid = wall slab minus the gap prism, plus ground. CSG distance and
+finite body-point/temporal sampling are diagnostics, not a certified signed
+distance or swept-volume safety bound. Taking a minimum over sampled surface
+points can MISS contact between samples. Do not infer safety from a positive
+value without separate geometric and temporal error bounds.
 """
 import math
 import torch
@@ -14,10 +15,9 @@ from .maths import quat_rotate
 def body_points(body_r: float, body_hh: float, device) -> torch.Tensor:
     """Sample points on the prop-guard cylinder surface. (P,3).
 
-    Density requirement: adjacent-point spacing must stay below the minimum
-    wall thickness (5 cm) so a thin slab cannot pass undetected between
-    points at any attitude. 24-pt rims give 4.2 cm chords; cap mid-rings
-    close the radial gap on the end faces for rolled traversal.
+    Heuristic density: 24-point rims and cap mid-rings improve diagnostics.
+    This sampling pattern does NOT prove collision coverage at every attitude
+    or for every thin obstacle; continuous swept geometry is a separate check.
     """
     def ring(nang, r, z):
         ang = torch.arange(nang, device=device) * (2 * math.pi / nang)

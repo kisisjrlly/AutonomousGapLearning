@@ -1,0 +1,183 @@
+# PIPELINE — 各阶段运行手册
+
+> 配合 `HANDOFF.md` 使用。所有命令在仓库根目录执行。
+> 统一用 `PY=/home/zhaoguodong/miniconda3/bin/python3`（系统 python3 无 torch）。
+
+## 当前默认路线（2026-10-04）：Contextual World Model
+
+旧 recurrent PPO campaign 只作 baseline。后续默认按以下顺序推进：
+
+```text
+AttemptSpec / AttemptOutcome
+    ↓
+Grouped Attempt Dataset
+    ↓
+No-Context vs Contextual World Model prediction
+    ↓
+Correct / Swapped / Shuffled Context evaluation
+    ↓
+CEM Attempt Planner
+    ↓
+Independent Recovery Shield
+    ↓
+Real try -> abort -> recover -> replan -> retry
+```
+
+### A. 当前已经实现：Attempt 数据基础
+
+```bash
+$PY -m pytest tests/test_attempt_schema.py tests/test_attempt_dataset.py -q
+
+mkdir -p datasets
+$PY -m agl.data.generate_attempt_dataset \
+  --out datasets/attempt_v0_smoke.npz \
+  --tasks 16 \
+  --attempts-per-task 8 \
+  --batch-tasks 8 \
+  --device cpu
+```
+
+检查：
+- 每个 `task_id` 恰好包含指定数量的 attempts；
+- `spec` 为 6 维 AttemptSpec，`target` 为统一 AttemptOutcome；
+- train/val/test 按 task_id 切分，无 task 泄漏；
+- `audit_*` 隐藏真值不进入 `AttemptDataset.__getitem__`；
+- outcome 分布必须有足够多样性，不能全部成功或全部失败。
+
+完整定义见 `docs/CONTEXTUAL_WORLD_MODEL_PLAN.md`。
+
+### B. 下一提交（尚未实现）：Prediction Benchmark
+
+只在 A 验证通过后新增：
+- NoContextWorldModel；
+- ContextWorldModel；
+- 对同一个未执行 candidate 比较 No / Correct / Swapped / Shuffled Context。
+
+如果 Correct Context 不能显著改善 held-out candidate prediction，就暂停 planner，不进入真机适应。
+
+### C. 后续（尚未实现）：Attempt Planner
+
+Prediction gain 成立后再加 CEM planner；V0 planner 不训练神经网络，只批量查询世界模型。
+
+## 阶段 0：测试与冒烟（每次改代码后）
+
+```bash
+$PY -m pytest tests/ -q          # 全套回归测试
+```
+覆盖：四元数/刚体/悬停平衡、SDF 碰撞与净空、可行性标签、渲染可见性、
+attempt 状态机、辅助标签扫描、PPO 端到端冒烟、**穿墙回归**（高速薄墙不隧道）。
+
+## Legacy 阶段 1：旧 recurrent-PPO 基线训练（非当前默认路线）
+
+这一阶段训练基础飞行、观测和候选试探行为。**验收标准与真机一致**：未知窄缝、零接触约束、证据收益、历史对照。
+仿真通过后才能进入真机阶段；仿真碰撞率下降不等于满足真机标准。
+
+训练入口：`python3 -m agl.train.train --config <cfg> --run <name> [--total-steps N] [--resume <ckpt>]`
+
+- 配置来源：`configs/*.yaml` 覆盖 `agl/config.py` dataclass 默认值。
+- 每迭代 = 3072 环境 × 96 步 rollout = 294,912 步 + 2 epoch PPO/BPTT 更新，≈5.3 s。
+- 产出：`runs/<name>/log.csv`（每 10 迭代一行：iter/steps/time/sps/difficulty/succ_ema/
+  rew_mean/各 loss/ep/* 指标）、`ckpt_latest.pt`（每 50 迭代）、`ckpt_final.pt`、`config.yaml`、
+  `GIT_COMMIT`、`tb/`。
+
+**当前不要直接启动旧 7-run campaign。** `scripts/run_campaign.sh` 已降级为 legacy baseline，并要求
+显式设置 `AGL_ALLOW_LEGACY_CAMPAIGN=1`。当前关键路径已经切换到 Attempt Dataset → Contextual World Model
+→ candidate prediction → planner。旧 campaign 仅用于最终论文 baseline 复现。
+
+### 关键训练语义（勿改坏）
+- **课程 λ**：`train.py curriculum()` —— 可行任务成功率 EMA（ema=0.98）> up_thresh(0.70) 则
+  λ+=0.01，< dn_thresh(0.40) 则 λ−=0.01。λ 控制缝尺寸/滚转/风/不可行比例/碰撞罚退火。
+  目标难度 1.0 与评估一致。
+- **记忆语义**：GRU 隐状态跨 rollout 持续；episode 终止（done）时清零；若
+  `reset_between_attempts` 为真则尝试中止时也清零（消融变体）。
+- **碰撞罚课程化**：λ<0.5 时碰撞罚从 −3/−1.5 退火到 −10/−4（探索脚手架）。
+- **辅助标签**：0.5 s 内碰撞（掩码：窗口内确知才标负例）；本次尝试成败（中止=未成功，绝不=必然碰撞）。
+
+### GapEnv v2：信息门控最小物理任务
+
+`TaskCfg.info_gate_enabled=True` 时，场景增加隐藏局部横风 `probe_wind`。它在远离窄缝时严格
+为零，只在距墙 `info_probe_distance` 内平滑激活，所以策略不能从初始 RGB 或显式任务字段读取
+其符号，只能在安全接近后从 IMU/VIO/运动响应中推断。默认关闭，旧 checkpoint 行为不变。
+
+`scene.paired_information_tasks()` 可生成除隐藏风符号外其他随机量完全相同的成对任务。
+详见 `docs/INFO_GATED_GAPENV_V2.md`。
+
+## 阶段 2：仿真机制与安全评估
+
+```bash
+$PY -m agl.eval.evaluate --ckpt runs/<name>/ckpt_final.pt --out results/<name> \
+    --n 512 --splits id,ood_geom,ood_dyn [--wipe-context]
+```
+- **划分**：`id`（训练分布难度 1 的保留实例）、`ood_geom`（宽度−15%、滚转+15%、厚度+15% 外推）、
+  `ood_dyn`（风/质量/推重比/τ_ω ±15%）。任务库种子固定（7001/7002/7003）。
+- **--wipe-context**：每次尝试中止时把 GRU 隐状态清零（仅评估时）→ 隔离跨尝试记忆因果效应。
+- 产出 `eval_<tag>.npz`：逐 episode 逐步轨迹（位置/速度/四元数/动作/净空/尝试 id/事件）。
+
+**评估已集成进 `scripts/run_campaign.sh`**（每 run 训练完自动跑；full_s* 额外跑 wipe）。
+独立跑也可用 `scripts/run_evals.sh`。
+
+
+**仿真阶段 1-2 的验收判据**：策略必须在保留测试集（训练分布外）上证明：
+- 面对未知窄缝时，零碰撞、零擦碰、零接触完成试探或主动中止；
+- 第二次尝试相对第一次有可测量的证据收益（对准误差↓或安全裕度↑）；
+- 历史替换对照显示该收益来自经历而非随机波动；
+- 限定 5 次尝试内最终成功率 ≥ 85%（几何可行实例）。
+
+仿真未通过上述标准时，不得进入真机阶段。
+
+## 阶段 3：真机安全闭环（进入前置门槛）
+
+真机实验前先验证悬停、减速、刹停、退回安全区、动作限幅、状态估计异常处理、独立急停和安全层拒绝不可恢复动作。
+测试环境使用软质边界、安全网、桨叶保护和低速限制；任何接触都应暂停实验并重新审查安全边界。
+
+## 阶段 4：真机无碰撞在线适应
+
+每个任务至少记录第一次试探、退出原因、退出时安全裕度、任务记忆、第二次动作及其差异。验收必须同时满足：
+
+- 没有碰撞、擦碰或保护罩接触；
+- 第二次动作变化与第一次获得的任务信息对应且可重复；
+- 相同状态下移除或替换历史会损害适应效果；
+- 证据不足时系统可以安全停住或放弃。
+
+## 阶段 5：指标与统计
+
+```bash
+$PY -m agl.eval.metrics results/<run>/eval_id.npz ...   # 单文件摘要
+$PY -m agl.analysis.make_paper_data --results results --out results/paper/summary.json
+```
+- `agl/eval/metrics.py`：离线 attempt 分段 → README §12 全指标（首尝试成功率/条件成功率/
+  中止率与中止净空/中止恢复率/接触率/放弃率/最小净空/饱和率/影子刹停包络违约率…）。
+- `make_paper_data.py`：**论文数据唯一来源**。池化 3 个 full 种子的 episode（簇 bootstrap CI）、
+  计算 k2 vs k1 的 z 检验、full vs wipe 的 k2 对比、消融各划分。
+- `agl/analysis/stats.py`：bootstrap CI、簇 bootstrap（attempt 按 episode 聚类）、
+  双比例 z 检验、配对 bootstrap。
+
+## 阶段 6：图表
+
+```bash
+$PY -m agl.analysis.make_figures --summary results/paper/summary.json --out paper/figures
+```
+图表清单（见 paper/outline.md）：
+- fig_training：4 面板训练曲线（success/difficulty/collision/attempts × 全部变体）
+- fig_adaptation：按尝试序号的条件下成功率（full/wipe/reset/no-memory，含 CI）
+- fig_bars：消融 & OOD 对比、安全指标
+- fig_episode：单 episode 行为解剖（俯视+侧视轨迹、净空/速度时序、中止标记）
+- fig1_overview：系统/任务/观测示意图
+调色板用已验证的 8 色分类表（figures.py 顶部），实体固定颜色、条件用线型。
+
+## 阶段 7：论文与交付
+
+- `paper/` 下素材：outline.md / intro-draft.md / methods-draft.md / references_verified.json。
+- 写作纪律：所有数字来自 summary.json/log.csv/npz 或真机日志；明确区分仿真与真机；不违反 HANDOFF 第 6 节铁律。
+- 交付物：论文正文 + 补充材料 + 图表 + 本套文档更新为完成态 + 提交。
+
+## 诊断工具
+
+```bash
+$PY -m agl.analysis.latency --ckpt runs/full_s1/ckpt_final.pt   # 部署延迟/参数量
+nvidia-smi -pl 250                                              # 降 GPU 功耗（若死机复发）
+tail -f /var/log/kern.log | grep -iE "segfault|mce|soft lockup|Xid"  # 硬件稳定性
+```
+
+
+真机阶段的安全闸门、分级流程与验收指标统一见 [REAL_FLIGHT_ADAPTATION.md](REAL_FLIGHT_ADAPTATION.md)。

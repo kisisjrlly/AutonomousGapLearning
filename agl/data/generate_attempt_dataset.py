@@ -1,223 +1,192 @@
-"""Generate grouped GapEnv attempts for contextual world-model training.
+"""Generate sensor-evidence V1 trials. No training or real-flight commands.
 
-Task-hidden simulator parameters are stored under the audit_ prefix.
-AttemptDataset.__getitem__ never exposes those arrays to the model.
+Physical settings are shared across independent, fixture-reset trials; these
+are NOT a flown sequence of retries. Default V0 geometry is fixed. Varying
+geometry is blocked until measured geometry/uncertainty are model inputs.
 """
 from __future__ import annotations
-
 import argparse
-import copy
+from dataclasses import asdict
+import hashlib
 import json
 from pathlib import Path
-
+import subprocess
 import numpy as np
 import torch
-
-from ..attempt.executor import execute_attempt_batch
-from ..attempt.spec import AttemptRanges, SPEC_FIELDS, sample_specs
-from ..attempt.outcome import TARGET_FIELDS
 from ..config import load_config
 from ..sim import scene
 from ..sim.env import GapEnv
-from .attempt_dataset import save_attempt_dataset
+from ..attempt.spec import AttemptRanges, SPEC_FIELDS, SPEC_VERSION, sample_specs
+from ..attempt.outcome import TARGET_FIELDS
+from ..attempt.executor import execute_attempt_batch, ControllerConfig, CONTROLLER_VERSION
+from .attempt_dataset import save_attempt_dataset, SCHEMA
 
 
-def _repeat_tree(x, repeats):
-    if isinstance(x, dict):
-        return {k: _repeat_tree(v, repeats) for k, v in x.items()}
-    if torch.is_tensor(x):
-        return x.repeat_interleave(repeats, dim=0)
-    return copy.deepcopy(x)
+def _tree_plain(x):
+    if torch.is_tensor(x): return x.detach().cpu().tolist()
+    if isinstance(x,dict): return {k:_tree_plain(v) for k,v in x.items()}
+    return x
 
 
-def _match_runtime_biases_by_task(env, attempts_per_task):
-    m = attempts_per_task
-    for start in range(0, env.n, m):
-        stop = start + m
-        env.v_bias[start:stop].copy_(env.v_bias[start].unsqueeze(0).expand(m, -1))
-        env.z_bias[start:stop].copy_(env.z_bias[start].expand(m))
+def _join(trees):
+    first=trees[0]
+    if isinstance(first,dict): return {k:_join([t[k] for t in trees]) for k in first}
+    if torch.is_tensor(first): return torch.cat(trees,0)
+    if any(t!=first for t in trees): raise ValueError('task scalar mismatch')
+    return first
 
 
-def _set_v0_fixed_geometry(base, cfg):
-    """Hold geometry fixed so V0 isolates hidden dynamics/context adaptation."""
-    base["gap_w"].fill_(0.52)
-    base["gap_h"].fill_(0.50)
-    base["gap_roll"].zero_()
-    base["wall_x"].fill_(3.0)
-    base["thick"].fill_(0.15)
-    base["gap_cy"].zero_()
-    base["gap_cz"].fill_(1.50)
-    feas, gm = scene.feasibility(
-        base["gap_w"], base["gap_h"],
-        cfg.sim.body_r, cfg.sim.body_hh,
-        cfg.task.feas_margin, cfg.task.feas_roll_max_deg,
-        base["gap_w"].device,
-    )
-    base["feasible"] = feas
-    base["geo_margin"] = gm
+def _repeat_tree(x,count):
+    if isinstance(x,dict): return {k:_repeat_tree(v,count) for k,v in x.items()}
+    if torch.is_tensor(x): return x.repeat_interleave(count,0)
+    return x
 
 
-def _audit_task_bank(base):
-    dyn = base["dyn"]
-    return {
-        "audit_gap_w": base["gap_w"].detach().cpu().numpy(),
-        "audit_gap_h": base["gap_h"].detach().cpu().numpy(),
-        "audit_gap_roll": base["gap_roll"].detach().cpu().numpy(),
-        "audit_wall_x": base["wall_x"].detach().cpu().numpy(),
-        "audit_mass": dyn["mass"].detach().cpu().numpy(),
-        "audit_twr": (dyn["tmax"] / (dyn["mass"] * 9.81)).detach().cpu().numpy(),
-        "audit_delay": dyn["delay"].detach().cpu().numpy(),
-        "audit_wind_steady": dyn["wind_steady"].detach().cpu().numpy(),
-        "audit_probe_wind": dyn["probe_wind"].detach().cpu().numpy(),
-    }
+def _set_v0_fixed_geometry(task,cfg):
+    for k,v in dict(gap_w=.52,gap_h=.50,gap_roll=0.,wall_x=3.,thick=.15,gap_cy=0.,gap_cz=1.5).items():
+        task[k].fill_(v)
+    task['feasible'],task['geo_margin']=scene.feasibility(task['gap_w'],task['gap_h'],cfg.sim.body_r,
+        cfg.sim.body_hh,cfg.task.feas_margin,cfg.task.feas_roll_max_deg,task['gap_w'].device)
+
+
+def _task(cfg,seed,task_number,device,distribution,disable_gust,c):
+    gen=torch.Generator(device=device).manual_seed(int(seed)+1009+104729*task_number)
+    t=scene.sample_tasks(1,cfg,1.,device,gen)
+    _set_v0_fixed_geometry(t,cfg)
+    d=t['dyn']
+    # Motor rating does NOT increase automatically with payload. Otherwise
+    # normalized thrust plus TWR-constant randomization cancels mass from motion.
+    d['tmax'].fill_(c.nominal_tmax)
+    d['wind_steady'].zero_()
+    family=('local_wind','payload','response')[task_number%3] if distribution=='separate' else 'combined'
+    if family in ('local_wind','response'): d['mass'].fill_(c.nominal_mass)
+    else: d['mass'][:]=c.nominal_mass*(.90+.20*torch.rand(1,device=device,generator=gen))
+    if family not in ('local_wind','combined'): d['probe_wind'].zero_()
+    if family not in ('response','combined'):
+        d['delay'].zero_();d['tau_rate'].fill_(.05);d['tau_thrust'].fill_(.045)
+    if disable_gust: d['gust_sigma'].zero_()
+    return t,family
+
+
+def _provenance():
+    root=Path(__file__).resolve().parents[2]
+    hashes={}
+    for pattern in ('agl/attempt/*.py','agl/data/*.py','agl/sim/*.py','agl/config.py'):
+        for path in sorted(root.glob(pattern)):
+            hashes[str(path.relative_to(root))]=hashlib.sha256(path.read_bytes()).hexdigest()
+    try:
+        commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True,stderr=subprocess.DEVNULL).strip()
+        dirty=bool(subprocess.check_output(['git','status','--porcelain'],cwd=root,text=True))
+    except (OSError,subprocess.CalledProcessError): commit=None;dirty=None
+    return {'git_commit':commit,'git_dirty':dirty,'source_sha256':hashes,
+            'torch_version':torch.__version__,'numpy_version':np.__version__}
+
+
+def save_viewer_trace(path,trace):
+    """Existing Rerun/GIF format, with authoritative per-row episode lengths."""
+    path=Path(path);path.parent.mkdir(parents=True,exist_ok=True)
+    names=np.array(['APPROACH','RETREAT','FINISHED'])
+    arrays={f'rec_{k}':v for k,v in trace.items() if isinstance(v,np.ndarray) and k!='steps'}
+    if arrays['rec_phase'].size: arrays['rec_phase']=names[arrays['rec_phase']]
+    arrays.update({f'task_{k}':v for k,v in trace['task'].items()})
+    arrays['steps']=trace['steps'];arrays['meta']=json.dumps(trace['meta'],allow_nan=False)
+    # Exclusive write prevents accidental replacement of previous experiment files.
+    with path.open('xb') as f: np.savez_compressed(f,**arrays)
 
 
 @torch.no_grad()
-def generate(
-    out,
-    *,
-    num_tasks=64,
-    attempts_per_task=8,
-    batch_tasks=8,
-    seed=0,
-    device="cpu",
-    difficulty=1.0,
-    disable_gust=True,
-    vary_geometry=False,
-    ranges=None,
-    executor_kwargs=None,
-):
-    if min(num_tasks, attempts_per_task, batch_tasks) <= 0:
-        raise ValueError("task/attempt counts must be positive")
-    if batch_tasks > num_tasks:
-        batch_tasks = num_tasks
-
-    out = Path(out)
-    if out.exists():
-        raise FileExistsError(out)
-
-    np_rng = np.random.default_rng(seed)
-    torch.manual_seed(seed)
-    task_gen = torch.Generator(device=device)
-    task_gen.manual_seed(seed + 1009)
-
-    all_task_id = []
-    all_attempt_index = []
-    all_spec = []
-    all_target = []
-    audit_accum = {}
-    next_task_id = 0
-
-    for task_start in range(0, num_tasks, batch_tasks):
-        bt = min(batch_tasks, num_tasks - task_start)
-        cfg = copy.deepcopy(load_config())
-        cfg.sim.device = device
-        cfg.sim.n_envs = bt * attempts_per_task
-        cfg.curriculum.enabled = False
-        cfg.task.info_gate_enabled = True
-        cfg.sim.ep_len = max(cfg.sim.ep_len, 800)
-
-        base = scene.sample_tasks(bt, cfg, difficulty, device, task_gen)
-        if not vary_geometry:
-            _set_v0_fixed_geometry(base, cfg)
-        repeated = _repeat_tree(base, attempts_per_task)
-        if disable_gust:
-            repeated["dyn"]["gust_sigma"].zero_()
-
-        env = GapEnv(cfg, device, difficulty=difficulty)
-        env._reset_envs(
-            torch.arange(env.n, device=env.dev),
-            tasks=repeated,
-        )
-        _match_runtime_biases_by_task(env, attempts_per_task)
-
-        specs = sample_specs(env.n, np_rng, ranges or AttemptRanges())
-        outcomes = execute_attempt_batch(
-            env, specs, **(executor_kwargs or {})
-        )
-
-        task_ids = np.repeat(
-            np.arange(next_task_id, next_task_id + bt, dtype=np.int64),
-            attempts_per_task,
-        )
-        attempt_indices = np.tile(
-            np.arange(attempts_per_task, dtype=np.int64), bt
-        )
-        all_task_id.append(task_ids)
-        all_attempt_index.append(attempt_indices)
-        all_spec.append(np.stack([s.as_vector() for s in specs]))
-        all_target.append(np.stack([o.as_target_vector() for o in outcomes]))
-
-        audit = _audit_task_bank(base)
-        for key, value in audit.items():
-            audit_accum.setdefault(key, []).append(value)
-        next_task_id += bt
-
-    arrays = {
-        "task_id": np.concatenate(all_task_id),
-        "attempt_index": np.concatenate(all_attempt_index),
-        "spec": np.concatenate(all_spec),
-        "target": np.concatenate(all_target),
-    }
-    audit = {
-        key: np.concatenate(chunks, axis=0)
-        for key, chunks in audit_accum.items()
-    }
-    meta = {
-        "schema": "attempt_dataset_v0",
-        "seed": int(seed),
-        "num_tasks": int(num_tasks),
-        "attempts_per_task": int(attempts_per_task),
-        "difficulty": float(difficulty),
-        "device_used_for_generation": str(device),
-        "gust_disabled": bool(disable_gust),
-        "geometry_varied": bool(vary_geometry),
-        "spec_fields": list(SPEC_FIELDS),
-        "target_fields": list(TARGET_FIELDS),
-        "model_input_rule": (
-            "Only spec/target are returned by model-facing __getitem__. "
-            "task_id/attempt_index are grouping metadata; audit_* is simulator ground truth."
-        ),
-        "split_rule": "Split by task_id; never split attempts from one task across train/test.",
-    }
-    save_attempt_dataset(out, meta=meta, audit=audit, **arrays)
-    return {
-        "out": str(out),
-        "num_records": int(len(arrays["task_id"])),
-        "num_tasks": int(num_tasks),
-        "attempts_per_task": int(attempts_per_task),
-        "success_rate": float(arrays["target"][:, TARGET_FIELDS.index("success")].mean()),
-        "recovered_rate": float(arrays["target"][:, TARGET_FIELDS.index("recovered")].mean()),
-        "contact_rate": float(arrays["target"][:, TARGET_FIELDS.index("contact")].mean()),
-    }
+def generate(out,*,num_tasks=16,attempts_per_task=8,batch_tasks=4,seed=0,device='cpu',
+             difficulty=1.,disable_gust=True,vary_geometry=False,ranges=None,executor_kwargs=None,
+             probes_per_task=2,distribution='separate',trace_dir=None):
+    for v in (num_tasks,attempts_per_task,batch_tasks):
+        if isinstance(v,bool) or not isinstance(v,int) or v<1: raise ValueError('positive integer counts required')
+    if vary_geometry: raise ValueError('geometry variation requires measured geometry inputs; V1 is fixed-geometry diagnostic')
+    if difficulty!=1.: raise ValueError('V1 diagnostic distribution is explicitly difficulty=1')
+    if not 0<=probes_per_task<attempts_per_task: raise ValueError('need at least one candidate per task')
+    if distribution not in ('separate','combined'): raise ValueError('unknown distribution')
+    out=Path(out)
+    if out.suffix!='.npz': raise ValueError('output must end in .npz')
+    if out.exists(): raise FileExistsError(out)
+    options=dict(executor_kwargs or {})
+    if set(options)&{'record','return_batch','probe_only','controller'}: raise ValueError('reserved executor options')
+    c=ControllerConfig(); ranges=ranges or AttemptRanges()
+    cfg=load_config();cfg.sim.device=device;cfg.curriculum.enabled=False;cfg.task.info_gate_enabled=True
+    cfg.sim.ep_len=options.get('max_approach_steps',720)+options.get('max_retreat_steps',600)+2
+    rows={k:[] for k in ('task_id','group_id','attempt_index','spec','initial_observation','evidence',
+                        'evidence_mask','context_eligible','target','target_mask','status','steps','role')}
+    audit_tasks=[];families=[];audit_ids=[]
+    for start in range(0,num_tasks,batch_tasks):
+        count=min(batch_tasks,num_tasks-start)
+        cfg.sim.n_envs=count*attempts_per_task
+        tasks=[];group_ids=[];specs=[]
+        for tid in range(start,start+count):
+            task,family=_task(cfg,seed,tid,device,distribution,disable_gust,c)
+            payload=json.dumps(_tree_plain(task),sort_keys=True,separators=(',',':'),allow_nan=False)
+            group_ids.append(hashlib.sha256(payload.encode()).hexdigest())
+            audit_tasks.append(payload);audit_ids.append(tid);families.append(family)
+            tasks.append(task)
+            rng=np.random.default_rng(np.random.SeedSequence([seed,tid,29]))
+            specs+=sample_specs(attempts_per_task,rng,ranges)
+        base=_join(tasks);bank=_repeat_tree(base,attempts_per_task)
+        # Same settings reproduce exactly; batch-layout invariance of the global
+        # simulator RNG is NOT claimed. The layout is recorded in the manifest.
+        torch.manual_seed(seed+5003+start)
+        env=GapEnv(cfg,device,difficulty=1.)
+        env._reset_envs(torch.arange(env.n,device=env.dev),tasks=bank)
+        for j in range(0,env.n,attempts_per_task):
+            env.v_bias[j:j+attempts_per_task]=env.v_bias[j].clone()
+            env.z_bias[j:j+attempts_per_task]=env.z_bias[j].clone()
+        is_probe=np.tile(np.arange(attempts_per_task)<probes_per_task,count)
+        result=execute_attempt_batch(env,specs,probe_only=is_probe,return_batch=True,
+                                     record=trace_dir is not None and start==0,controller=c,**options)
+        outcomes=result.outcomes
+        data={'task_id':np.repeat(np.arange(start,start+count),attempts_per_task),
+              'group_id':np.repeat(np.array(group_ids),attempts_per_task),
+              'attempt_index':np.tile(np.arange(attempts_per_task),count),
+              'spec':np.stack([s.as_vector() for s in specs]),
+              'initial_observation':result.initial_observation,'evidence':result.evidence,
+              'evidence_mask':result.evidence_mask,
+              'context_eligible':np.array([o.context_eligible for o in outcomes]) & result.evidence_mask.any(1),
+              'target':np.stack([o.as_target_vector() for o in outcomes]),
+              'target_mask':np.stack([o.as_target_mask() for o in outcomes]),
+              'status':np.array([o.status for o in outcomes]),'steps':np.array([o.steps for o in outcomes]),
+              'role':np.where(is_probe,'probe','candidate')}
+        for k,v in data.items(): rows[k].append(v)
+        if result.trace is not None: save_viewer_trace(Path(trace_dir)/'batch_0000.npz',result.trace)
+    arrays={k:np.concatenate(v) for k,v in rows.items()}
+    meta={'schema':SCHEMA,'spec_version':SPEC_VERSION,'spec_fields':list(SPEC_FIELDS),'target_fields':list(TARGET_FIELDS),
+          'seed':seed,'num_tasks':num_tasks,'attempts_per_task':attempts_per_task,'batch_tasks':batch_tasks,
+          'probes_per_task':probes_per_task,'geometry_varied':False,'distribution':distribution,
+          'gust_disabled':disable_gust,'controller_version':CONTROLLER_VERSION,'controller':asdict(c),
+          'ranges':asdict(ranges),'executor_options':options,'sim_config':cfg.to_dict(),
+          'sampling_mode':'independent_fixture_trials_NOT_continuous_retries',
+          'evidence_rule':'o_pre[:17],requested_command,o_post[:17],dt,time; no query labels or terminal reset obs',
+          'labels_rule':'observed controller-conditional trial outcomes with applicability masks; NOT unexecuted feasibility',
+          'privileges':'executor uses true pose/fixture geometry; fixed nominal dynamics; predictor receives simulated sensor evidence',
+          'split_rule':'group_id physical fingerprints; task_id is local metadata only',**_provenance()}
+    save_attempt_dataset(out,meta=meta,audit={'audit_task_json':np.array(audit_tasks),
+                         'audit_task_id':np.array(audit_ids),'audit_family':np.array(families)},**arrays)
+    unique,counts=np.unique(arrays['status'],return_counts=True)
+    return {'out':str(out),'num_records':len(arrays['task_id']),'num_tasks':num_tasks,
+            'status_counts':dict(zip(unique.tolist(),counts.tolist())),
+            'context_eligible_records':int(arrays['context_eligible'].sum()),
+            'candidate_records':int((arrays['role']=='candidate').sum()),
+            'valid_target_fraction':arrays['target_mask'].mean(0).tolist(),
+            'scope':'data_pipeline_validation_NOT_prediction_gain_NOT_real_flight'}
 
 
 def main():
-    p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--out", required=True)
-    p.add_argument("--tasks", type=int, default=64)
-    p.add_argument("--attempts-per-task", type=int, default=8)
-    p.add_argument("--batch-tasks", type=int, default=8)
-    p.add_argument("--seed", type=int, default=0)
-    p.add_argument("--device", default="cpu")
-    p.add_argument("--keep-gust", action="store_true")
-    p.add_argument(
-        "--vary-geometry", action="store_true",
-        help="V1 option: randomize gap geometry; V0 keeps it fixed until vision is added",
-    )
-    a = p.parse_args()
-    result = generate(
-        a.out,
-        num_tasks=a.tasks,
-        attempts_per_task=a.attempts_per_task,
-        batch_tasks=a.batch_tasks,
-        seed=a.seed,
-        device=a.device,
-        disable_gust=not a.keep_gust,
-        vary_geometry=a.vary_geometry,
-    )
-    print(json.dumps(result, indent=2))
+    p=argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--out',required=True);p.add_argument('--tasks',type=int,default=16)
+    p.add_argument('--attempts-per-task',type=int,default=8);p.add_argument('--batch-tasks',type=int,default=4)
+    p.add_argument('--probes-per-task',type=int,default=2);p.add_argument('--seed',type=int,default=0)
+    p.add_argument('--device',default='cpu');p.add_argument('--keep-gust',action='store_true')
+    p.add_argument('--distribution',choices=['separate','combined'],default='separate')
+    p.add_argument('--trace-dir');p.add_argument('--vary-geometry',action='store_true')
+    a=p.parse_args()
+    print(json.dumps(generate(a.out,num_tasks=a.tasks,attempts_per_task=a.attempts_per_task,
+       batch_tasks=a.batch_tasks,probes_per_task=a.probes_per_task,seed=a.seed,device=a.device,
+       disable_gust=not a.keep_gust,distribution=a.distribution,trace_dir=a.trace_dir,
+       vary_geometry=a.vary_geometry),indent=2,allow_nan=False))
 
-
-if __name__ == "__main__":
-    main()
+if __name__=='__main__': main()
