@@ -25,7 +25,9 @@ def test_attempt_dataset_hides_audit_and_splits_by_task(tmp_path):
     )
     ds = AttemptDataset(path)
     assert len(ds) == 12
-    assert "audit_mass" not in ds[0]
+    assert set(ds[0]) == {"spec", "target"}
+    assert "task_id" not in ds[0] and "attempt_index" not in ds[0]
+    assert ds.record_metadata(0) == {"task_id": 0, "attempt_index": 0}
     assert "audit_mass" in ds.audit
 
     splits = ds.split(seed=7)
