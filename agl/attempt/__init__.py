@@ -7,8 +7,9 @@ can be shared by simulation data generation, planners and real-flight logging.
 
 from .spec import AttemptRanges, AttemptSpec, SPEC_FIELDS, sample_specs
 from .outcome import AttemptOutcome, TARGET_FIELDS
+from .executor import execute_attempt_batch
 
 __all__ = [
     "AttemptRanges", "AttemptSpec", "AttemptOutcome",
-    "SPEC_FIELDS", "TARGET_FIELDS", "sample_specs",
+    "SPEC_FIELDS", "TARGET_FIELDS", "sample_specs", "execute_attempt_batch",
 ]
