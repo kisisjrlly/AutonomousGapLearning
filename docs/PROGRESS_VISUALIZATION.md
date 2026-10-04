@@ -1,5 +1,17 @@
 # 开发过程可视化
 
+## 2026-10-04 本地已生成结果
+
+- 动态制动 GIF：artifacts/progress/dynamic-20261004-accepted-s0/flight.gif。
+- 交互录制：artifacts/viz/dynamic-20261004-verified.rrd。
+- 使用独立可视化环境打开，避免把训练环境 NumPy 1.x 升级为 Rerun 所需 2.x：
+
+```bash
+/home/zhaoguodong/.local/share/agl-viz-venv/bin/rerun artifacts/viz/dynamic-20261004-verified.rrd
+```
+
+已验证 RRD 生成与 headless Viewer 读取。seed 0 成功不代表整个任务分布通过，seed 1/2 存在撤退终止。
+
 当前主调试界面是 **GapEnv + Rerun**。GIF 只作为无额外依赖的 fallback；抽象 safe-probe reference
 动画只用于协议示意，不能作为学习/飞行能力证据。
 

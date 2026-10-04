@@ -1,0 +1,47 @@
+{
+  "scope": "same_complete_snapshot_branch_preparation_NOT_history_intervention",
+  "source": "artifacts/progress/dynamic-20261004-accepted-s0/recovery.pt",
+  "branches": [
+    "correct",
+    "removed",
+    "swapped"
+  ],
+  "initial_observation_equal": true,
+  "complete_environment_equal": true,
+  "snapshot_keys": [
+    "attempt_depth",
+    "attempts",
+    "buf_ptr",
+    "config",
+    "delay_buf",
+    "difficulty",
+    "ep_min_clear",
+    "frame",
+    "frame_buf_ptr",
+    "frame_delay_buf",
+    "in_attempt",
+    "prev_action",
+    "prev_dist",
+    "prev_x",
+    "retry_dwell",
+    "rng_cpu",
+    "state",
+    "t_step",
+    "task",
+    "v_bias",
+    "z_bias"
+  ],
+  "observation_shapes": {
+    "img": [
+      4,
+      3,
+      24,
+      32
+    ],
+    "vec": [
+      4,
+      18
+    ]
+  },
+  "acceptance_scope": "privileged_dynamic_braking_baseline_NOT_learned_NOT_safety_guarantee"
+}

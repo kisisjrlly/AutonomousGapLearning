@@ -252,8 +252,9 @@ def log_episode(ep: EvalEpisode, out: str | Path | None = None, spawn: bool = Fa
             )
         last_phase = phase
 
-    rr.flush()
+    recording = rr.get_global_data_recording()
+    recording.flush()
     if out is not None:
         # Finalize the RRD footer now instead of relying on interpreter shutdown.
-        rr.disconnect()
+        recording.disconnect()
     return out

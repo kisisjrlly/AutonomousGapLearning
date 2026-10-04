@@ -1,0 +1,41 @@
+{
+  "scope": "privileged_dynamic_braking_baseline_NOT_learned_NOT_safety_guarantee",
+  "seed": 2,
+  "n_envs": 8,
+  "protocol_completed": false,
+  "failure_reason": "terminal_or_contact",
+  "acceptance": {
+    "clearance_margin_m": 0.18,
+    "position_error_m": 0.08,
+    "terminal_speed_mps": 0.08,
+    "terminal_body_rate_radps": 0.12,
+    "dwell_steps": 12,
+    "min_brake_entry_speed_mps": 0.25
+  },
+  "approach_speed_command_mps": 0.45,
+  "probe_wall_distance_m": 0.6,
+  "brake_entry_speed_min_mps": 0.41584649682044983,
+  "brake_entry_speed_max_mps": 0.43394023180007935,
+  "stopping_distance_max_m": 0.16074132919311523,
+  "closest_center_to_wall_m": 0.42902088165283203,
+  "min_clearance_m": 0.2652394771575928,
+  "terminal_speed_max_mps": null,
+  "terminal_body_rate_max_radps": null,
+  "retry_state_recovered_fraction": 0.25,
+  "terminal_x_max_m": null,
+  "retry_plane_x_m": 1.2,
+  "phase_peak_speed_mps": {
+    "approach_probe": 0.48460128903388977,
+    "brake": 0.4370209872722626,
+    "retreat": 1.551101565361023,
+    "settled": 0.06289323419332504
+  },
+  "phase_peak_body_rate_radps": {
+    "approach_probe": 0.5345761775970459,
+    "brake": 0.5904306173324585,
+    "retreat": 0.8157421946525574,
+    "settled": 0.0057672541588544846
+  },
+  "state_feedback": "ground truth p/v/q/w; true gap pose, mass and thrust calibration",
+  "safety": "pre-step clearance rejection plus post-step checks; NOT a predictive recovery shield"
+}

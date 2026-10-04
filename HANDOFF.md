@@ -1,5 +1,7 @@
 # HANDOFF — 项目交接索引（给任何后续 AI / 协作者）
 
+> 2026-10-04 本地验证：52 tests passed。动态制动 seed 0（4 环境）成功，seed 1/2（各 8 环境）部分任务撤退终止，seed 3（8 环境）成功；不可声称随机任务鲁棒。Rerun 0.38 已在隔离环境生成录制并由 headless Viewer 读取，图形交互尚需用户打开检查。
+
 > 2026-09-22 最新复审：先读 [当日实现评审](docs/REVIEW_20260922.md)。旧 `safe_probe_retreat` 已降级为 legacy negative example；当前 `closed_loop_probe` 已改为**非零速度近场 approach → dynamic brake → retreat → settle**，并记录 ego RGB/actor obs。此前“28 个环境/48 tests”仅属于 fbcd489 的旧 waypoint-recovery 版本，不能继承到本版；本版必须由本地重新测试后再记录数字。尚无学习重试/穿缝/真机结果。
 
 > 本文件是**唯一入口**。任何 AI（codex、另一 Claude 会话等）接手本项目时，请先完整阅读本文件，

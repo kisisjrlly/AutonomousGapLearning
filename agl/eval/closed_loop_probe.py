@@ -55,10 +55,12 @@ def _action_from_accel(env, accel):
     return action.clamp(-1.0, 1.0)
 
 
-def position_feedback(env, target):
+def position_feedback(env, target, integral=None):
     """Ground-truth position/velocity feedback used for brake/retreat settling."""
     st = env.state
     accel = 2.2 * (target - st["p"]) - 2.8 * st["v"]
+    if integral is not None:
+        accel = accel + .8 * integral
     return _action_from_accel(env, accel)
 
 
@@ -178,6 +180,7 @@ def run(
     brake_peak_x = torch.full((env.n,), -float("inf"))
     phase_peak_speed = torch.zeros(env.n, 4)
     phase_peak_rate = torch.zeros(env.n, 4)
+    integral = torch.zeros_like(st["p"])
 
     trace = {
         k: [] for k in (
@@ -208,6 +211,7 @@ def run(
             phase[entering] = 1
             dwell[entering] = 0
             phase_steps[entering] = 0
+            integral[entering] = 0
 
         active = phase < 3
         phase_steps[active] += 1
@@ -227,8 +231,15 @@ def run(
             break
 
         action_approach = velocity_approach(env, approach_speed, yz_target)
-        action_brake = position_feedback(env, brake_target)
-        action_retreat = position_feedback(env, home)
+        target = torch.where((phase == 1)[:, None], brake_target, home)
+        integrating = phase > 0
+        # Only lateral disturbance rejection needs integral compensation here.
+        # Integrating the long x retreat saturates the controller and causes
+        # home overshoot followed by the environment's give-up termination.
+        integral[integrating, 1] = (integral[integrating, 1] + cfg.sim.dt_ctrl *
+                                   (target[integrating, 1] - st["p"][integrating, 1])).clamp(-1.2, 1.2)
+        action_brake = position_feedback(env, brake_target, integral)
+        action_retreat = position_feedback(env, home, integral)
         action = action_retreat.clone()
         action[phase == 0] = action_approach[phase == 0]
         action[phase == 1] = action_brake[phase == 1]
@@ -253,6 +264,13 @@ def run(
             ("attempt_id", info["attempt_id"]),
         ):
             trace[key].append(value.cpu().numpy().copy())
+
+        # step() auto-resets terminal rows. Never report reset-state motion as
+        # braking/recovery telemetry or feed it into phase transitions.
+        if done.any() or info["collision"].any():
+            minimum = min(minimum, float(info["clearance"].min()))
+            reason = "terminal_or_contact"
+            break
 
         minimum = min(minimum, float(info["clearance"].min()))
         wall_distance = env.task["wall_x"] - st["p"][:, 0]
@@ -296,8 +314,10 @@ def run(
             phase[brake_done] = 2
             dwell[brake_done] = 0
             phase_steps[brake_done] = 0
+            integral[brake_done] = 0
 
-        retreating = phase == 2
+        # Do not count the final BRAKE sample as a RETREAT dwell sample.
+        retreating = (phase == 2) & ~brake_done
         retreat_ready = retreating & ready(st, home)
         dwell[retreating] = torch.where(
             retreat_ready[retreating], dwell[retreating] + 1,
@@ -322,7 +342,7 @@ def run(
         brake_peak_x[valid_brake] - brake_start_x[valid_brake]
     ).clamp_min(0.0)
 
-    recovered_retry_state = (
+    recovered_retry_state = ready(st, home) & (
         (st["p"][:, 0] < cfg.sim.retry_x)
         & (~env.in_attempt)
         & (env.attempts >= 1)
@@ -362,10 +382,10 @@ def run(
             closest_wall_distance if np.isfinite(closest_wall_distance) else None
         ),
         "min_clearance_m": minimum if np.isfinite(minimum) else None,
-        "terminal_speed_max_mps": float(st["v"].norm(dim=-1).max()),
-        "terminal_body_rate_max_radps": float(st["w"].norm(dim=-1).max()),
+        "terminal_speed_max_mps": float(st["v"].norm(dim=-1).max()) if reason not in ("terminal_or_contact", "nonfinite_state") else None,
+        "terminal_body_rate_max_radps": float(st["w"].norm(dim=-1).max()) if reason not in ("terminal_or_contact", "nonfinite_state") else None,
         "retry_state_recovered_fraction": float(recovered_retry_state.float().mean()),
-        "terminal_x_max_m": float(st["p"][:, 0].max()),
+        "terminal_x_max_m": float(st["p"][:, 0].max()) if reason not in ("terminal_or_contact", "nonfinite_state") else None,
         "retry_plane_x_m": float(cfg.sim.retry_x),
         "phase_peak_speed_mps": {
             PHASE[i]: float(phase_peak_speed[:, i].max()) for i in range(4)

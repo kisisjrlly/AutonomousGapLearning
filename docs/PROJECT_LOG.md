@@ -1,5 +1,14 @@
 # PROJECT LOG — 项目时间线与决策记录
 
+## 2026-10-04 动态制动本地验证
+
+- 拉取网页版 7c80d22，原测试 2 failed / 50 passed；横风造成稳态位置偏差，使制动阶段超时。
+- 新增限幅横向积分反馈，防止 x 方向长距离撤退积分饱和。seed 0（4 环境）成功，seed 1/2（各 8 环境）部分任务撤退终止，seed 3（8 环境）成功；保留失败，无鲁棒性结论。
+- 自动重置后的状态不再进入动作峰值/恢复 telemetry；BRAKE 最后一步不计入 RETREAT dwell，恢复末状态重新检查位置/速度/角速度。
+- 结构传感器实验通过：远处 actor RGB/vector 配对 delta=0，近处 vector 最大 delta=0.068915；噪声关闭，不能作为噪声鲁棒识别证据。
+- Rerun 安装在独立 /home/zhaoguodong/.local/share/agl-viz-venv；修复 0.38 的 flush/disconnect API。成功保存 RRD 并由 headless Viewer 读取生成截图；截图为启动状态，未声称全部交互和画面已人工验收。
+- 全套 52 passed，4 warnings；严格同状态分支初态/观测检查通过，尚无 history intervention 或 learned retry。
+
 ## 2026-09-22 深度复审（后续修订）
 
 新增真值反馈控制基线 closed_loop_probe，28 个受控环境均完成接近、停留、撤退和停稳验收，最低净空 0.7706 m。补齐失败拒绝、恢复快照、难度/配置重放校验及可视化。详情见 REVIEW_20260922.md；仍无学习重试、穿缝或真机证据。
