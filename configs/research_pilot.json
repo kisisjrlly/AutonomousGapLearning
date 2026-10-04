@@ -1,0 +1,21 @@
+{
+  "version": "common_bank_v1",
+  "scope": "simulation_diagnostic_NOT_flight_commands",
+  "probes": [
+    {"start_y_offset": 0.0, "start_z_offset": 0.0, "entry_yaw": 0.0, "entry_speed": 0.35, "accel_early": 0.50, "accel_late": 0.15},
+    {"start_y_offset": 0.0, "start_z_offset": 0.0, "entry_yaw": 0.0, "entry_speed": 0.50, "accel_early": 0.80, "accel_late": 0.35}
+  ],
+  "candidates": [
+    {"start_y_offset": 0.0, "start_z_offset": 0.0, "entry_yaw": 0.0, "entry_speed": 0.35, "accel_early": 0.50, "accel_late": 0.15},
+    {"start_y_offset": -0.20, "start_z_offset": 0.0, "entry_yaw": 0.0, "entry_speed": 0.45, "accel_early": 0.60, "accel_late": 0.20},
+    {"start_y_offset": 0.20, "start_z_offset": 0.0, "entry_yaw": 0.0, "entry_speed": 0.45, "accel_early": 0.60, "accel_late": 0.20},
+    {"start_y_offset": 0.0, "start_z_offset": 0.0, "entry_yaw": 0.0, "entry_speed": 0.65, "accel_early": 0.80, "accel_late": 0.50},
+    {"start_y_offset": 0.0, "start_z_offset": 0.0, "entry_yaw": 0.0, "entry_speed": 0.45, "accel_early": 0.25, "accel_late": 0.55},
+    {"start_y_offset": 0.0, "start_z_offset": 0.0, "entry_yaw": 0.0, "entry_speed": 0.45, "accel_early": 1.10, "accel_late": -0.25},
+    {"start_y_offset": -0.15, "start_z_offset": 0.0, "entry_yaw": 0.12, "entry_speed": 0.45, "accel_early": 0.60, "accel_late": 0.20},
+    {"start_y_offset": 0.15, "start_z_offset": 0.0, "entry_yaw": -0.12, "entry_speed": 0.45, "accel_early": 0.60, "accel_late": 0.20},
+    {"start_y_offset": 0.0, "start_z_offset": 0.10, "entry_yaw": 0.0, "entry_speed": 0.45, "accel_early": 0.60, "accel_late": 0.20}
+  ],
+  "executor_options": {"abort_clearance": 0.04, "max_approach_steps": 720, "max_retreat_steps": 600, "evidence_steps": 32},
+  "warning": "The clearance threshold is inherited for simulator diagnostics; it is NOT validated as a safety margin. All contacts and failed probes must be retained. Freeze or revise this bank on development settings only."
+}

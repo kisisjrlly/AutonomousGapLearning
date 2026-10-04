@@ -16,7 +16,7 @@ import torch
 from ..config import load_config
 from ..sim import scene
 from ..sim.env import GapEnv
-from ..attempt.spec import AttemptRanges, SPEC_FIELDS, SPEC_VERSION, sample_specs
+from ..attempt.spec import AttemptRanges, AttemptSpec, SPEC_FIELDS, SPEC_VERSION, sample_specs
 from ..attempt.outcome import TARGET_FIELDS
 from ..attempt.executor import execute_attempt_batch, ControllerConfig, CONTROLLER_VERSION
 from .attempt_dataset import save_attempt_dataset, SCHEMA
@@ -97,13 +97,21 @@ def save_viewer_trace(path,trace):
 @torch.no_grad()
 def generate(out,*,num_tasks=16,attempts_per_task=8,batch_tasks=4,seed=0,device='cpu',
              difficulty=1.,disable_gust=True,vary_geometry=False,ranges=None,executor_kwargs=None,
-             probes_per_task=2,distribution='separate',trace_dir=None):
+             probes_per_task=2,distribution='separate',trace_dir=None,
+             fixed_specs=None,rollout_seed=None):
     for v in (num_tasks,attempts_per_task,batch_tasks):
         if isinstance(v,bool) or not isinstance(v,int) or v<1: raise ValueError('positive integer counts required')
     if vary_geometry: raise ValueError('geometry variation requires measured geometry inputs; V1 is fixed-geometry diagnostic')
     if difficulty!=1.: raise ValueError('V1 diagnostic distribution is explicitly difficulty=1')
     if not 0<=probes_per_task<attempts_per_task: raise ValueError('need at least one candidate per task')
     if distribution not in ('separate','combined'): raise ValueError('unknown distribution')
+    # Common-bank pilots vary physical conditions, not which candidates exist.
+    if fixed_specs is not None:
+        fixed_specs=tuple(fixed_specs)
+        if len(fixed_specs)!=attempts_per_task or not all(isinstance(x,AttemptSpec) for x in fixed_specs):
+            raise ValueError('fixed_specs must contain one valid AttemptSpec per trial')
+    if rollout_seed is not None and (isinstance(rollout_seed,bool) or not isinstance(rollout_seed,int) or rollout_seed<0):
+        raise ValueError('rollout_seed must be a nonnegative integer')
     out=Path(out)
     if out.suffix!='.npz': raise ValueError('output must end in .npz')
     if out.exists(): raise FileExistsError(out)
@@ -126,11 +134,11 @@ def generate(out,*,num_tasks=16,attempts_per_task=8,batch_tasks=4,seed=0,device=
             audit_tasks.append(payload);audit_ids.append(tid);families.append(family)
             tasks.append(task)
             rng=np.random.default_rng(np.random.SeedSequence([seed,tid,29]))
-            specs+=sample_specs(attempts_per_task,rng,ranges)
+            specs+=list(fixed_specs) if fixed_specs is not None else sample_specs(attempts_per_task,rng,ranges)
         base=_join(tasks);bank=_repeat_tree(base,attempts_per_task)
         # Same settings reproduce exactly; batch-layout invariance of the global
         # simulator RNG is NOT claimed. The layout is recorded in the manifest.
-        torch.manual_seed(seed+5003+start)
+        torch.manual_seed((seed if rollout_seed is None else rollout_seed)+5003+start)
         env=GapEnv(cfg,device,difficulty=1.)
         env._reset_envs(torch.arange(env.n,device=env.dev),tasks=bank)
         for j in range(0,env.n,attempts_per_task):
@@ -155,6 +163,8 @@ def generate(out,*,num_tasks=16,attempts_per_task=8,batch_tasks=4,seed=0,device=
         if result.trace is not None: save_viewer_trace(Path(trace_dir)/'batch_0000.npz',result.trace)
     arrays={k:np.concatenate(v) for k,v in rows.items()}
     meta={'schema':SCHEMA,'spec_version':SPEC_VERSION,'spec_fields':list(SPEC_FIELDS),'target_fields':list(TARGET_FIELDS),
+          'rollout_seed':seed if rollout_seed is None else rollout_seed,
+          'fixed_specs':None if fixed_specs is None else [s.as_vector().tolist() for s in fixed_specs],
           'seed':seed,'num_tasks':num_tasks,'attempts_per_task':attempts_per_task,'batch_tasks':batch_tasks,
           'probes_per_task':probes_per_task,'geometry_varied':False,'distribution':distribution,
           'gust_disabled':disable_gust,'controller_version':CONTROLLER_VERSION,'controller':asdict(c),
