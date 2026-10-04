@@ -38,6 +38,25 @@ def _match_runtime_biases_by_task(env, attempts_per_task):
         env.z_bias[start:stop].copy_(env.z_bias[start].expand(m))
 
 
+def _set_v0_fixed_geometry(base, cfg):
+    """Hold geometry fixed so V0 isolates hidden dynamics/context adaptation."""
+    base["gap_w"].fill_(0.52)
+    base["gap_h"].fill_(0.50)
+    base["gap_roll"].zero_()
+    base["wall_x"].fill_(3.0)
+    base["thick"].fill_(0.15)
+    base["gap_cy"].zero_()
+    base["gap_cz"].fill_(1.50)
+    feas, gm = scene.feasibility(
+        base["gap_w"], base["gap_h"],
+        cfg.sim.body_r, cfg.sim.body_hh,
+        cfg.task.feas_margin, cfg.task.feas_roll_max_deg,
+        base["gap_w"].device,
+    )
+    base["feasible"] = feas
+    base["geo_margin"] = gm
+
+
 def _audit_task_bank(base):
     dyn = base["dyn"]
     return {
@@ -64,6 +83,7 @@ def generate(
     device="cpu",
     difficulty=1.0,
     disable_gust=True,
+    vary_geometry=False,
     ranges=None,
     executor_kwargs=None,
 ):
@@ -98,6 +118,8 @@ def generate(
         cfg.sim.ep_len = max(cfg.sim.ep_len, 800)
 
         base = scene.sample_tasks(bt, cfg, difficulty, device, task_gen)
+        if not vary_geometry:
+            _set_v0_fixed_geometry(base, cfg)
         repeated = _repeat_tree(base, attempts_per_task)
         if disable_gust:
             repeated["dyn"]["gust_sigma"].zero_()
@@ -149,6 +171,7 @@ def generate(
         "difficulty": float(difficulty),
         "device_used_for_generation": str(device),
         "gust_disabled": bool(disable_gust),
+        "geometry_varied": bool(vary_geometry),
         "spec_fields": list(SPEC_FIELDS),
         "target_fields": list(TARGET_FIELDS),
         "model_input_rule": (
@@ -178,6 +201,10 @@ def main():
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--device", default="cpu")
     p.add_argument("--keep-gust", action="store_true")
+    p.add_argument(
+        "--vary-geometry", action="store_true",
+        help="V1 option: randomize gap geometry; V0 keeps it fixed until vision is added",
+    )
     a = p.parse_args()
     result = generate(
         a.out,
@@ -187,6 +214,7 @@ def main():
         seed=a.seed,
         device=a.device,
         disable_gust=not a.keep_gust,
+        vary_geometry=a.vary_geometry,
     )
     print(json.dumps(result, indent=2))
 
