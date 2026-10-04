@@ -57,6 +57,7 @@ def test_small_generated_dataset_is_grouped_and_readable(tmp_path):
     assert result["num_records"] == 6
     ds = AttemptDataset(path)
     assert ds.meta["schema"] == "attempt_dataset_v0"
+    assert ds.meta["geometry_varied"] is False
     assert ds.meta["split_rule"].startswith("Split by task_id")
     assert np.array_equal(np.bincount(ds.task_id), np.array([2, 2, 2]))
     assert set(ds.audit) >= {"audit_mass", "audit_wind_steady", "audit_probe_wind"}
