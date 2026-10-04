@@ -65,6 +65,7 @@ def generate(
     difficulty=1.0,
     disable_gust=True,
     ranges=None,
+    executor_kwargs=None,
 ):
     if min(num_tasks, attempts_per_task, batch_tasks) <= 0:
         raise ValueError("task/attempt counts must be positive")
@@ -109,7 +110,9 @@ def generate(
         _match_runtime_biases_by_task(env, attempts_per_task)
 
         specs = sample_specs(env.n, np_rng, ranges or AttemptRanges())
-        outcomes = execute_attempt_batch(env, specs)
+        outcomes = execute_attempt_batch(
+            env, specs, **(executor_kwargs or {})
+        )
 
         task_ids = np.repeat(
             np.arange(next_task_id, next_task_id + bt, dtype=np.int64),
