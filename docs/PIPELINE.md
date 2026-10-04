@@ -3,6 +3,62 @@
 > 配合 `HANDOFF.md` 使用。所有命令在仓库根目录执行。
 > 统一用 `PY=/home/zhaoguodong/miniconda3/bin/python3`（系统 python3 无 torch）。
 
+## 当前默认路线（2026-10-04）：Contextual World Model
+
+旧 recurrent PPO campaign 只作 baseline。后续默认按以下顺序推进：
+
+```text
+AttemptSpec / AttemptOutcome
+    ↓
+Grouped Attempt Dataset
+    ↓
+No-Context vs Contextual World Model prediction
+    ↓
+Correct / Swapped / Shuffled Context evaluation
+    ↓
+CEM Attempt Planner
+    ↓
+Independent Recovery Shield
+    ↓
+Real try -> abort -> recover -> replan -> retry
+```
+
+### A. 当前已经实现：Attempt 数据基础
+
+```bash
+$PY -m pytest tests/test_attempt_schema.py tests/test_attempt_dataset.py -q
+
+mkdir -p datasets
+$PY -m agl.data.generate_attempt_dataset \
+  --out datasets/attempt_v0_smoke.npz \
+  --tasks 16 \
+  --attempts-per-task 8 \
+  --batch-tasks 8 \
+  --device cpu
+```
+
+检查：
+- 每个 `task_id` 恰好包含指定数量的 attempts；
+- `spec` 为 6 维 AttemptSpec，`target` 为统一 AttemptOutcome；
+- train/val/test 按 task_id 切分，无 task 泄漏；
+- `audit_*` 隐藏真值不进入 `AttemptDataset.__getitem__`；
+- outcome 分布必须有足够多样性，不能全部成功或全部失败。
+
+完整定义见 `docs/CONTEXTUAL_WORLD_MODEL_PLAN.md`。
+
+### B. 下一提交（尚未实现）：Prediction Benchmark
+
+只在 A 验证通过后新增：
+- NoContextWorldModel；
+- ContextWorldModel；
+- 对同一个未执行 candidate 比较 No / Correct / Swapped / Shuffled Context。
+
+如果 Correct Context 不能显著改善 held-out candidate prediction，就暂停 planner，不进入真机适应。
+
+### C. 后续（尚未实现）：Attempt Planner
+
+Prediction gain 成立后再加 CEM planner；V0 planner 不训练神经网络，只批量查询世界模型。
+
 ## 阶段 0：测试与冒烟（每次改代码后）
 
 ```bash
@@ -11,7 +67,7 @@ $PY -m pytest tests/ -q          # 全套回归测试
 覆盖：四元数/刚体/悬停平衡、SDF 碰撞与净空、可行性标签、渲染可见性、
 attempt 状态机、辅助标签扫描、PPO 端到端冒烟、**穿墙回归**（高速薄墙不隧道）。
 
-## 阶段 1：仿真基础技能训练（单卡 RTX 4080，GPU 向量化 3072 环境）
+## Legacy 阶段 1：旧 recurrent-PPO 基线训练（非当前默认路线）
 
 这一阶段训练基础飞行、观测和候选试探行为。**验收标准与真机一致**：未知窄缝、零接触约束、证据收益、历史对照。
 仿真通过后才能进入真机阶段；仿真碰撞率下降不等于满足真机标准。
@@ -25,9 +81,8 @@ attempt 状态机、辅助标签扫描、PPO 端到端冒烟、**穿墙回归**�
   `GIT_COMMIT`、`tb/`。
 
 **当前不要直接启动旧 7-run campaign。** `scripts/run_campaign.sh` 已降级为 legacy baseline，并要求
-显式设置 `AGL_ALLOW_LEGACY_CAMPAIGN=1`。当前关键路径是 information-gated GapEnv v2：
-先让任务包含只有安全接近后才能辨识的隐藏因素，再做同状态 history intervention。旧 campaign
-仅用于需要复现实验基线时运行，不再是默认下一步。
+显式设置 `AGL_ALLOW_LEGACY_CAMPAIGN=1`。当前关键路径已经切换到 Attempt Dataset → Contextual World Model
+→ candidate prediction → planner。旧 campaign 仅用于最终论文 baseline 复现。
 
 ### 关键训练语义（勿改坏）
 - **课程 λ**：`train.py curriculum()` —— 可行任务成功率 EMA（ema=0.98）> up_thresh(0.70) 则

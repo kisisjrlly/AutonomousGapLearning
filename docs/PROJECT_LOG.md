@@ -228,3 +228,20 @@
   一致、gate 内 hidden wind 只经真实动力学导致 actor observation 分叉。
 - 新增 raw artifact ignore 规则，未来不再把每轮 trajectory/recovery tensor 持续塞进 Git 历史。
 - 本提交不继承旧 fbcd489 的 28-env/48-test 数值；必须由本地拉取后重新运行测试和 dynamic baseline。
+
+
+## 2026-10-04（主线切换：Attempt-level Contextual World Model）
+
+- 用户明确将 Science Robotics 级别目标收敛为：无人机每次尝试前先预测多个起点/速度/加速度方案，
+  真实尝试后把实际结果加入 context，重新预测尚未执行方案，再自主改变下一次 AttemptSpec。
+- 默认主线由“CNN+GRU+PPO 直接 history→action”切换为
+  **Attempt Dataset → Contextual World Model → CEM Attempt Planner → independent recovery shield**。
+  旧 PPO/GRU 全部保留为论文 baseline，不再继续默认 300M-step campaign。
+- 新增 `docs/CONTEXTUAL_WORLD_MODEL_PLAN.md`：冻结 16GB 单卡资源约束、6 维 AttemptSpec、统一
+  AttemptOutcome、task-level split、防 hidden-state leakage、Go/No-Go 验收标准。
+- 新增 `agl/attempt/`：AttemptSpec / AttemptOutcome / vectorized privileged AttemptExecutor；
+  executor 只负责仿真候选轨迹与诚实 outcome 标签，不是 learned planner，也不是真机 safety shield。
+- 新增 `agl/data/`：同一 hidden physical task 下生成多条 candidate attempts；NPZ 中
+  `audit_*` 仅供分析，AttemptDataset 默认不暴露给模型；train/val/test 必须按 task_id 切分。
+- 新增对应回归测试与 smoke dataset CLI。下一步必须先本地验证数据分布和无泄漏，再实现
+  NoContextWorldModel / ContextWorldModel；在 prediction gain 未成立前禁止提前实现 planner。

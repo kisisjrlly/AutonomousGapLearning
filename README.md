@@ -1,6 +1,6 @@
 # AutonomousGapLearning
 
-自主试探、主动中止并在线适应的端到端无人机窄缝穿越研究。
+基于上下文世界模型、多次安全尝试与真实经历适应的无人机窄缝穿越研究。
 
 > 状态：研究设计与仿真基线已建立；最终目标是**真机无碰撞在线适应**，当前尚未完成真机闭环。
 >
@@ -8,9 +8,10 @@
 >
 > 默认分支：`main`
 >
-> 当前开发重点（2026-09-22）：information-gated GapEnv v2、**非零速度近场 dynamic braking → retreat → settle**、
-> 完整 snapshot 的 same-state branch foundation，以及可审计的 GapEnv 3D/ego-camera/actor-observation 回放。
-> 旧 7-run PPO campaign 与旧 open-loop retreat 均仅保留为 legacy baseline/negative example。
+> 当前默认主线（2026-10-04）：**Attempt-level Contextual World Model（尝试级上下文世界模型）**。
+> 先学习“过去真实尝试 + 新候选尝试 → 该候选会发生什么”，再用规划器选择新的起点、速度、加速度与进近方式。
+> 旧 CNN+GRU+PPO、多尝试奖励塑形和旧 open-loop retreat 均降级为 baseline / negative example；不再作为默认开发路线。
+> 资源约束：单张 16GB GPU，优先小型结构化世界模型，不训练视频生成模型或大规模 VLA。
 >
 > **可视化入口**：`docs/VISUALIZATION_STACK.md`。安装 `requirements-viz.txt` 后可直接把真实
 > `eval_*.npz` 或 `ckpt_latest.pt` 打开到 Rerun Viewer，不再只靠指标和 GIF 猜策略行为。
@@ -44,7 +45,7 @@ GRU 后性能下降，或在仿真中降低碰撞率，都不足以证明该能�
 
 本项目的核心问题不是普通的窄缝检测或一次性穿越，而是：
 
-> 一个统一的时序神经网络能否根据自身连续交互历史，自主试探未知物理可行性，并在不接触障碍物的前提下学会何时继续、何时中止、如何退出以及如何修正下一次尝试？
+> 无人机能否利用前一次或前几次安全尝试形成的真实物理上下文，**改善对尚未执行候选尝试的结果预测**，并据此自主重新选择起点、速度、加速度、进近角和轨迹，在接触前中止不可取方案并最终穿越或安全放弃？
 
 这里的“失败尝试”必须被准确理解为：
 
@@ -82,7 +83,46 @@ GRU 后性能下降，或在仿真中降低碰撞率，都不足以证明该能�
 1. 当前穿越仍然具有足够的成功可能性；
 2. 当前状态仍然保留一条可执行的刹停或退出轨迹。
 
-## 4. “端到端”的准确含义
+## 4. 当前默认系统架构（2026-10-04）
+
+当前主线不是直接训练 history→action 的重试策略，而是：
+
+```text
+Previous real attempts
+        ↓
+Contextual World Model
+        ↓
+predict unexecuted AttemptSpec candidates
+        ↓
+Attempt Planner
+        ↓
+Independent Safety / Recovery Shield
+        ↓
+real execution
+        ↓
+observed AttemptOutcome
+        └────────────────→ context
+```
+
+核心预测关系：
+
+```math
+\hat{Y}=W_\theta(C,\xi)
+```
+
+其中 `C` 是同一物理任务中以前真实执行过的尝试，`\xi` 是尚未执行的候选尝试，
+`\hat{Y}` 是预测的漂移、净空、刹停距离、成功/恢复概率等结果。
+
+论文必须依次证明：
+
+1. Correct Context 让**未执行 candidate**的预测更准；
+2. 预测变准导致下一次 AttemptSpec 发生合理改变；
+3. 改变后的真实尝试提高安全任务表现。
+
+完整开发规范见 `docs/CONTEXTUAL_WORLD_MODEL_PLAN.md`。
+
+### 历史端到端策略路线（保留为 baseline）
+
 
 部署时，核心策略可以抽象为：
 
@@ -120,9 +160,9 @@ GRU 后性能下降，或在仿真中降低碰撞率，都不足以证明该能�
 - 不要求系统没有任何安全保护；最小安全内核可以独立否决明确不可恢复的动作，但不能替代策略完成窄缝识别、尝试选择或恢复规划；
 - 不等于没有训练目标。没有目标、奖励、偏好或行为先验时，“自主选择”没有可判断的正确性。
 
-## 5. 在线适应方案A：权重固定，行为改变
+## 5. 历史方案A（baseline）：权重固定的直接策略记忆
 
-这是当前真机首选方案。它的关键不是“GRU 跨尝试不清零”，而是把真机交互形成的证据写入可验证的
+这是历史候选方案，现保留用于 recurrent-policy baseline；**不再是当前默认主线**。当前首选见 §4 与 `docs/CONTEXTUAL_WORLD_MODEL_PLAN.md`。它的关键不是“GRU 跨尝试不清零”，而是把真机交互形成的证据写入可验证的
 任务记忆，并使下一次安全动作依赖这些证据。记忆可以是 GRU 隐状态，也可以是显式的几何、动力学、
 不确定性和尝试摘要。第一版应优先选择能回放和审计的表示。
 
@@ -206,7 +246,7 @@ h_{t+1}=f_\theta(h_t,o_t,a_t), \qquad a_{t+1}=g_\theta(h_{t+1})
 
 因此，禁止把“从随机初始化开始，在真实无人机上不断碰撞并在线强化学习”作为本项目的基本路线。
 
-## 7. 当前技术判断：快慢双层学习
+## 7. 历史技术判断：快慢双层学习（非当前默认主线）
 
 项目当前的首选路线是：
 

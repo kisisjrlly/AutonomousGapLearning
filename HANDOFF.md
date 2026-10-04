@@ -1,5 +1,10 @@
 # HANDOFF — 项目交接索引（给任何后续 AI / 协作者）
 
+> 2026-10-04 主线冻结：项目默认路线切换为 **Attempt-level Contextual World Model（尝试级上下文世界模型）**。
+> 目标因果链为“真实尝试 → 未执行 candidate 预测更准 → 下一次 AttemptSpec 改变 → 真实表现改善”。
+> 旧 CNN+GRU+PPO、reward-shaping retry 路线只保留为 baseline；不要再把恢复旧 300M campaign 当默认下一步。
+> 必读：`docs/CONTEXTUAL_WORLD_MODEL_PLAN.md`。
+
 > 2026-10-04 本地验证：52 tests passed。动态制动 seed 0（4 环境）成功，seed 1/2（各 8 环境）部分任务撤退终止，seed 3（8 环境）成功；不可声称随机任务鲁棒。Rerun 0.38 已在隔离环境生成录制并由 headless Viewer 读取，图形交互尚需用户打开检查。
 
 > 2026-09-22 最新复审：先读 [当日实现评审](docs/REVIEW_20260922.md)。旧 `safe_probe_retreat` 已降级为 legacy negative example；当前 `closed_loop_probe` 已改为**非零速度近场 approach → dynamic brake → retreat → settle**，并记录 ego RGB/actor obs。此前“28 个环境/48 tests”仅属于 fbcd489 的旧 waypoint-recovery 版本，不能继承到本版；本版必须由本地重新测试后再记录数字。尚无学习重试/穿缝/真机结果。
@@ -13,8 +18,9 @@
 
 在**未知窄缝**上实现"尝试→安全中止→退出→利用真实经历调整→重试→穿越"完整闭环。
 仿真阶段按真机标准验证机制可行性（零接触约束、证据收益、历史对照）；真机阶段在真实物理约束下复现该能力。
-适应机制是**跨尝试保留的 GRU 记忆**（权重冻结的"上下文适应"，README §5 方案A），
-训练数据核心是**无碰撞的安全中止尝试**而非碰撞（README §2/§9）。
+当前适应机制不再预设为 GRU hidden state。默认路线是：把前几次真实 AttemptSpec→AttemptOutcome 作为 context，
+用小型世界模型预测新的未执行 AttemptSpec 会发生什么，再由 planner 选择下一次尝试；部署时世界模型权重冻结。
+真实飞行仍坚持“无碰撞安全中止尝试”而不是 learning by crashing。
 
 > **北极星（任何接手者必须理解，勿偏离）**：最终交付物是一个**真机能力**——"能过就调整姿态穿过、
 > 过不去就在接触前安全掉头、掉头后改起点/姿态/策略再试"。**能力是目标，方法（RL、模仿、
@@ -29,6 +35,7 @@
 README.md                 研究纲领（§1–§17，必读）
 docs/tech-selection.md    技术选型与设计决策（仿真器/传感器/动作空间/模型/训练/消融）
 docs/PIPELINE.md          各阶段运行手册（本文件的下游）
+docs/CONTEXTUAL_WORLD_MODEL_PLAN.md  **当前默认主线与数据/验收规范（必读）**
 docs/REAL_FLIGHT_ADAPTATION.md  真机无碰撞在线适应与验收规范
 docs/INFO_GATED_GAPENV_V2.md     当前信息门控刚体任务设计与 smoke check
 docs/VISUALIZATION_STACK.md       GapEnv/Rerun 3D、ego RGB、时间轴与 checkpoint 行为监视
@@ -40,6 +47,8 @@ paper/references_verified.json  26 条已核实的参考文献 + 18 条相关发
 paper/hyperparams_snapshot.json 配置快照
 
 agl/config.py             全部超参数（dataclass 默认值，YAML 覆盖）
+agl/attempt/              NEW：AttemptSpec / AttemptOutcome / privileged AttemptExecutor
+agl/data/                 NEW：按 task 分组的 attempt dataset、task-level split 与生成器
 agl/sim/                  GPU 向量化仿真器：maths(四元数)/dynamics(刚体+执行器)/
                           scene(任务分布+域随机化)/collision(SDF碰撞/净空)/render(光线投射RGB)/env(多尝试环境)
 agl/models/policy.py      CNN+GRU 策略、非对称批评家、辅助头
@@ -89,8 +98,8 @@ predictive safety shield 与 learned retry 仍未实现。
   已整理 **docs/HARDWARE_ISSUE.md**（RMA 证据包，建议走 Intel 5 年质保换 CPU）。
 - **旧待验证干预（现为 legacy）**：recipe_v3（risk 反馈 + 撤退奖励 + 慢课程 + 刹停 shaping）。
   不再把“从零 PPO 涌现 retry”作为默认关键路径；配置保留用于基线和对照。
-- **当前关键路径**：information-gated GapEnv v2 → 刚体安全试探/退出 → paired latent task →
-  same-state correct/removed/swapped history intervention → 再选择模仿/离线 RL/分层策略或 PPO 微调。
+- **当前关键路径**：Attempt schema → grouped Attempt Dataset → No-Context vs Contextual World Model 预测基准 →
+  Correct/Swapped/Shuffled Context 因果实验 → CEM Attempt Planner → independent safety shield → 真机闭环。
 - **已确认基线（full_s1 300M）**：难度 1.0，首尝试 80.7%，碰撞 23%，n_attempts≈1.0（无 abort）。
 - **已就绪（等数据）**：评估管线（含 risk 校准 AUROC 0.978 基线）、聚合 make_paper_data（已验证）、
   图表管线（training/adaptation/bars/episode/overview/risk）、论文占位符（abstract/results/
@@ -105,16 +114,19 @@ PY=/home/zhaoguodong/miniconda3/bin/python3   # PATH 里默认 python3 没有 to
 # 1) 先验证当前代码
 $PY -m pytest tests/ -q
 
-# 1a) 验证 hidden task evidence 确实进入 actor 可见传感器
+# 1a) 当前新主线 smoke：Attempt schema / executor / grouped dataset
+$PY -m pytest tests/test_attempt_schema.py tests/test_attempt_dataset.py -q
+mkdir -p datasets
+$PY -m agl.data.generate_attempt_dataset \
+  --out datasets/attempt_v0_smoke.npz \
+  --tasks 16 \
+  --attempts-per-task 8 \
+  --batch-tasks 8 \
+  --device cpu
+
+# 1b) 现有 dynamic-braking / sensor-evidence 基础设施回归
 $PY -m agl.eval.verify_sensor_information --pairs 8 --steps 20
-
-# 1b) 运行当前 dynamic-braking recovery baseline（数值必须重新生成）
 $PY -m agl.eval.closed_loop_probe --pairs 2 --seed 0 --out /tmp/agl-dynamic-brake
-
-# 1c) 只在 1b protocol_completed=true 后检查严格 same-state 分支起点
-$PY -m agl.eval.same_state_intervention \
-  --recovery /tmp/agl-dynamic-brake/recovery.pt \
-  --out /tmp/agl-same-state
 
 # 2) 旧 7-run PPO 战役仅作复现基线，默认被脚本阻止
 # AGL_ALLOW_LEGACY_CAMPAIGN=1 nohup bash scripts/run_campaign.sh > runs/campaign.out 2>&1 &

@@ -11,3 +11,6 @@ artifacts/progress/*.pt
 artifacts/progress/**/trajectory.npz
 artifacts/progress/**/*.pt
 artifacts/viz/*.rrd
+
+# Generated attempt/world-model datasets are local experiment data.
+datasets/
