@@ -115,6 +115,7 @@ Different attempts explore different AttemptSpec values.
 Hard rules:
 
 - train/validation/test split **by task_id**, never by attempt;
+- `task_id` / `attempt_index` are grouping metadata only and are forbidden as neural-network inputs;
 - hidden simulator parameters use the `audit_` prefix and are forbidden as
   model inputs;
 - query-attempt outcome must never appear in its context;
