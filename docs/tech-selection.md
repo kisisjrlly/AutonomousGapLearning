@@ -1,5 +1,11 @@
 # 技术选型文档（阶段0交付物）
 
+> **2026-10-04 route override:** Sections describing CNN+GRU + recurrent PPO are retained as
+> historical baseline decisions. The current default architecture is defined in
+> `docs/CONTEXTUAL_WORLD_MODEL_PLAN.md`: attempt-level contextual prediction,
+> planner, and independent recovery shield under a single 16GB-GPU budget.
+> Do not treat the historical H1/H2 PPO architecture as the current implementation target.
+
 > 对应 README §16 要求的首项任务：在编写训练代码前，确定平台、仿真器、传感器、动作空间、
 > 时序模型、训练算法、安全边界、数据格式与阶段1验收指标。
 > 日期：2026-07-26。硬件现实：单卡 RTX 4080 16GB，32 核 CPU，62GB 内存。
