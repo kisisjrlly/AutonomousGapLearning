@@ -152,8 +152,8 @@ def generate(
         "spec_fields": list(SPEC_FIELDS),
         "target_fields": list(TARGET_FIELDS),
         "model_input_rule": (
-            "Only task_id/attempt_index/spec/target are model-eligible. "
-            "audit_* arrays are simulator ground truth for analysis only."
+            "Only spec/target are returned by model-facing __getitem__. "
+            "task_id/attempt_index are grouping metadata; audit_* is simulator ground truth."
         ),
         "split_rule": "Split by task_id; never split attempts from one task across train/test.",
     }
