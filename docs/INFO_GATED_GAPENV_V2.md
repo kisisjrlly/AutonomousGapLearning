@@ -1,13 +1,11 @@
-# GapEnv v2：信息门控最小物理任务
+# GapEnv v2：历史信息门控实验（已停用）
 
 日期：2026-09-22。
 
 ## 目标
 
-旧 GapEnv 的多数随机因素可以在首次视觉或短时本体状态中直接处理，因此策略很容易退化成“一次冲过或撞墙”。
-要研究“安全试探后利用经历改变下一次尝试”，任务必须包含一个**初始不可知、但能通过安全交互获得**的变量。
-
-第一版采用隐藏局部横风，而不是再增加 oracle 传感器。它直接作用于现有 6-DoF 动力学，却不进入 actor 的显式观测。
+本文件记录的隐藏局部横风方案已从当前主线移除。所有风配置字段仍可读取旧文件，
+但当前动力学、任务采样、特权观测和可视化都强制使用零风。
 
 ## 配置
 
@@ -19,26 +17,25 @@ task:
   info_probe_wind: 1.2
 ```
 
-每个任务采样一个横向 `probe_wind`。在
+旧版本曾在
 
 ```text
 x <= wall_x - info_probe_distance
 ```
 
-时它严格为零；进入 probe zone 后在 `info_probe_ramp` 内平滑激活。策略只能从 IMU、VIO 速度与真实控制误差中逐步辨识它。
+时将横风激活；这段语义不再适用于当前实验。
 
 默认 `info_gate_enabled=False`，因此旧 checkpoint、旧基线和已有训练语义保持兼容。
 
-## 配对任务
+## 兼容接口
 
 `scene.paired_information_tasks()` 生成
 
 ```text
-pair0(+wind), pair0(-wind), pair1(+wind), pair1(-wind), ...
+pair0a, pair0b, pair1a, pair1b, ...
 ```
 
-每一对任务的几何、纹理、基础风、质量、执行器参数与传感器偏置逐元素相同，仅隐藏局部风符号不同。
-这为后续 same-state history intervention 提供最小可控实验单元。
+每一对任务逐元素相同，`wind_steady`、`gust_sigma`、`probe_wind` 永远为零。
 
 ## 无训练 smoke check
 
@@ -46,12 +43,11 @@ pair0(+wind), pair0(-wind), pair1(+wind), pair1(-wind), ...
 python3 -m agl.eval.verify_info_gate --pairs 8 --steps 20 --device cpu
 ```
 
-预期结构：远处 pair wind delta 为 0；进入 probe zone 后隐藏横风方向相反；从匹配刚体初态施加相同
-hover 控制后，pair 的横向速度应产生可测分叉。这个检查只验证环境信息结构，不是策略适应证据。
+该命令现在是无风回归检查：即使手动注入旧风字段，也不能改变动力学或观测。
 
 ## 当前提交不声称什么
 
-本提交只建立“必须交互才能出现新信息”的物理基础设施，不声称策略已经学会主动试探、退出或重试。
+当前主线只验证无风条件下窄缝几何、控制和安全退出基础设施，不声称策略已经学会主动试探、退出或重试。
 后续必须完成：
 
 1. 低速刚体 probe → stop → retreat 的零接触脚本/优化器基线；

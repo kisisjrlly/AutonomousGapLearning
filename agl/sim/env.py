@@ -193,7 +193,7 @@ class GapEnv:
             task["gap_roll"].sin().unsqueeze(-1), task["gap_roll"].cos().unsqueeze(-1),
             st["v"] / 5.0,
             clear.clamp(-0.2, 2.0).unsqueeze(-1) / 2.0,
-            (self._effective_wind_steady() + st["wind"]) / 3.0,
+            torch.zeros_like(st["v"]),  # inert wind slots preserve PRIV_DIM
             (dyn["mass"] / 0.775 - 1.0).unsqueeze(-1),
             (dyn["tmax"] / (dyn["mass"] * 9.81) / 3.0).unsqueeze(-1),
             (dyn["delay"].float() / 2.0).unsqueeze(-1),
@@ -208,16 +208,8 @@ class GapEnv:
                             self.task["gap_cy"], self.task["gap_cz"]], dim=-1)
 
     def _effective_wind_steady(self):
-        """Wind acting now; optional latent crosswind appears only near the gap."""
-        dyn = self.task["dyn"]
-        base = dyn["wind_steady"]
-        local = dyn.get("probe_wind")
-        if local is None or not getattr(self.cfg.task, "info_gate_enabled", False):
-            return base
-        start = self.task["wall_x"] - self.cfg.task.info_probe_distance
-        ramp = max(float(self.cfg.task.info_probe_ramp), 1e-6)
-        alpha = ((self.state["p"][:, 0] - start) / ramp).clamp(0.0, 1.0)
-        return base + alpha.unsqueeze(-1) * local
+        """Return zero: the current narrow-gap milestone has no wind."""
+        return torch.zeros_like(self.task["dyn"]["wind_steady"])
 
     # ------------------------------------------------------------------- step
     def step(self, action, *, capture_transition=False):
@@ -249,7 +241,7 @@ class GapEnv:
             min_clear = torch.minimum(min_clear, c)
 
         dyn_step = dict(self.task["dyn"])
-        dyn_step["wind_steady"] = self._effective_wind_steady()
+        dyn_step["wind_steady"] = torch.zeros_like(self.task["dyn"]["wind_steady"])
         dynamics.step(st, t_cmd, w_cmd, dyn_step, cfg.sim.dt_ctrl,
                       cfg.sim.substeps, substep_cb=_cb)
         # sensor bias OU

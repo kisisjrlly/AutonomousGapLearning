@@ -62,7 +62,7 @@ python3 -m agl.eval.view_eval_rerun \
 
 当前 Viewer 可同时显示：
 
-- 墙体/窄缝和 information-gate 区域；
+- 墙体/0.30 m 窄缝区域；
 - dynamic-brake trigger plane；
 - 无人机真实 3D 姿态、轨迹和速度向量；
 - `APPROACH_PROBE / BRAKE / RETREAT` phase；
@@ -70,9 +70,9 @@ python3 -m agl.eval.view_eval_rerun \
 - actor 18 维 observation vector；
 - clearance / clear_pre / attempt / collision；
 - CTBR 四通道动作；
-- hidden probe wind（仅 debug privileged overlay）。
+- 风向量不再显示；旧 `probe_wind` 字段仅作为全零兼容字段。
 
-`probe_wind` 绝不是 actor 输入，只能用于调试解释。
+当前实验不存在可显示的 `probe_wind`；旧记录中的该字段必须解释为历史数据。
 
 ### GIF fallback
 
@@ -94,7 +94,7 @@ python3 -m agl.eval.verify_sensor_information --pairs 8 --steps 20
 该工具关闭观测/像素随机噪声，只验证信息通路结构：
 
 - information gate 外 matched pair 的 actor observation 必须一致；
-- gate 内 hidden wind 只能通过真实动力学让 actor observation 分叉。
+- 成功/失败轨迹只用于检查姿态、净空、接触和退出时序。
 
 它不是 noisy deployment classifier，也不是 learned adaptation 证据。
 

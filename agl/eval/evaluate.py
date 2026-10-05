@@ -3,7 +3,7 @@
 Splits:
   id        held-out instances from the training distribution (difficulty=1)
   ood_geom  gap width/roll/thickness extrapolated ~15% beyond training range
-  ood_dyn   wind/mass/thrust/latency-constant extrapolated ~15%
+  ood_dyn   mass/thrust/latency-constant extrapolated ~15%; wind always disabled
 
 Each env runs exactly one episode from the bank; policy is deterministic
 (mean action). --wipe-context zeroes the GRU hidden state whenever an attempt
@@ -27,11 +27,12 @@ def split_cfg(cfg: Config, split: str) -> Config:
     c = copy.deepcopy(cfg)
     t = c.task
     if split == "ood_geom":
+        if t.narrow_gap_only:
+            t.narrow_gap_width = round(t.narrow_gap_width * 0.85, 4)
         t.width_lo = round(t.width_lo * 0.85, 4)          # 0.34 -> 0.289
         t.roll_max_deg = t.roll_max_deg * 1.15            # 40 -> 46 deg
         t.thick_hi = round(t.thick_hi * 1.15, 4)          # 0.30 -> 0.345
     elif split == "ood_dyn":
-        t.wind_max = t.wind_max * 1.15
         t.mass_lo, t.mass_hi = round(t.mass_lo * 0.85, 4), round(t.mass_hi * 1.15, 4)
         t.twr_lo, t.twr_hi = round(t.twr_lo * 0.9, 4), round(t.twr_hi * 1.1, 4)
         t.tau_rate_hi = round(t.tau_rate_hi * 1.15, 4)
@@ -72,11 +73,10 @@ def run_eval(model, cfg, split, n_tasks, device, wipe_context=False,
     task_np = {k: bank[k].cpu().numpy() for k in
                ("gap_w", "gap_h", "gap_roll", "wall_x", "thick", "gap_cy",
                 "gap_cz", "feasible", "geo_margin")}
-    task_np["wind_mag"] = bank["dyn"]["wind_steady"].norm(dim=-1).cpu().numpy()
+    task_np["wind_mag"] = np.zeros(N, dtype=np.float32)  # legacy slot
     task_np["mass"] = bank["dyn"]["mass"].cpu().numpy()
     task_np["twr"] = (bank["dyn"]["tmax"] / (bank["dyn"]["mass"] * 9.81)).cpu().numpy()
-    task_np["probe_wind"] = bank["dyn"].get(
-        "probe_wind", torch.zeros(N, 3, device=device)).cpu().numpy()
+    task_np["probe_wind"] = np.zeros((N, 3), dtype=np.float32)  # legacy slot
 
     frames = (np.zeros((T, save_frames, 3, ecfg.sensor.img_h, ecfg.sensor.img_w),
                        dtype=np.uint8) if save_frames else None)

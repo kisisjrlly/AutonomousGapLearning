@@ -33,12 +33,16 @@ def feasibility(width, height, body_r, body_hh, margin, roll_max_deg, device):
 def sample_tasks(n: int, cfg, difficulty: float, device, gen=None) -> dict:
     t, lam = cfg.task, difficulty
     d = device
-    width = _u(n, lerp(t.width_lo_easy, t.width_lo, lam),
-               lerp(t.width_hi_easy, t.width_hi, lam), d, gen)
-    inf_mask = torch.rand(n, device=d, generator=gen) < (t.infeasible_frac * lam)
-    width = torch.where(inf_mask, _u(n, t.infeasible_w_lo, t.infeasible_w_hi, d, gen), width)
-    height = _u(n, lerp(t.height_lo_easy, t.height_lo, lam),
-                lerp(t.height_hi_easy, t.height_hi, lam), d, gen)
+    if getattr(t, "narrow_gap_only", False):
+        width = torch.full((n,), float(t.narrow_gap_width), device=d)
+        height = torch.full((n,), float(t.narrow_gap_height), device=d)
+    else:
+        width = _u(n, lerp(t.width_lo_easy, t.width_lo, lam),
+                   lerp(t.width_hi_easy, t.width_hi, lam), d, gen)
+        inf_mask = torch.rand(n, device=d, generator=gen) < (t.infeasible_frac * lam)
+        width = torch.where(inf_mask, _u(n, t.infeasible_w_lo, t.infeasible_w_hi, d, gen), width)
+        height = _u(n, lerp(t.height_lo_easy, t.height_lo, lam),
+                    lerp(t.height_hi_easy, t.height_hi, lam), d, gen)
     roll_max = math.radians(lerp(t.roll_max_deg_easy, t.roll_max_deg, lam))
     cz_mid = 0.5 * (t.gap_cz_lo + t.gap_cz_hi)
     cz_lo = lerp(cz_mid - t.gap_cz_spread_easy, t.gap_cz_lo, lam)
@@ -66,24 +70,14 @@ def sample_tasks(n: int, cfg, difficulty: float, device, gen=None) -> dict:
         "alpha_max": _u(n, t.alpha_max_lo, t.alpha_max_hi, d, gen),
         "kd_lin": _u(n, t.kd_lin_lo, t.kd_lin_hi, d, gen),
         "kd_quad": _u(n, t.kd_quad_lo, t.kd_quad_hi, d, gen),
-        "wind_tau": t.wind_tau,
-        "gust_sigma": _u(n, 0.0, t.wind_gust_sigma * lam, d, gen),
+        "wind_tau": 0.0,  # inert compatibility slot
+        "gust_sigma": torch.zeros(n, device=d),
         "delay": torch.randint(0, t.delay_max_steps + 1, (n,), device=d, generator=gen),
     }
-    wind_mag = _u(n, 0.0, t.wind_max * lam, d, gen)
-    wind_dir = _u(n, 0.0, 2 * math.pi, d, gen)
-    task["dyn"]["wind_steady"] = torch.stack(
-        [wind_mag * wind_dir.cos(), wind_mag * wind_dir.sin(), torch.zeros(n, device=d)], dim=-1)
-    # Optional latent disturbance used by GapEnv v2. It is zero when disabled
-    # and is only activated near the wall by env.py, so it cannot be inferred
-    # from the initial state alone.
-    probe_wind = torch.zeros(n, 3, device=d)
-    if getattr(t, "info_gate_enabled", False):
-        mag = _u(n, 0.8 * t.info_probe_wind, 1.2 * t.info_probe_wind, d, gen)
-        sign = torch.where(torch.rand(n, device=d, generator=gen) < 0.5,
-                           -torch.ones(n, device=d), torch.ones(n, device=d))
-        probe_wind[:, 1] = sign * mag
-    task["dyn"]["probe_wind"] = probe_wind
+    # Current milestone deliberately has no wind disturbance. Keep the
+    # tensors in the task schema so old NPZ/checkpoint readers remain usable.
+    task["dyn"]["wind_steady"] = torch.zeros(n, 3, device=d)
+    task["dyn"]["probe_wind"] = torch.zeros(n, 3, device=d)
     # visual randomization
     task["vis"] = {
         "wall_alb": _u(n, 0.15, 0.85, d, gen).unsqueeze(-1) * torch.ones(1, 3, device=d)
@@ -109,16 +103,14 @@ def sample_tasks(n: int, cfg, difficulty: float, device, gen=None) -> dict:
 
 
 def paired_information_tasks(n_pairs: int, cfg, difficulty: float, device, gen=None) -> dict:
-    """Create matched task pairs differing only in the latent probe-wind sign.
+    """Create matched no-wind task pairs for deterministic paired tests.
 
-    Row order is [pair0+, pair0-, pair1+, pair1-, ...]. Every tensor-valued
-    field is duplicated exactly before probe_wind is overwritten, so geometry,
-    visuals, base dynamics and sensor biases are matched within each pair.
+    Row order is [pair0a, pair0b, pair1a, pair1b, ...]. Every tensor-valued
+    field is duplicated exactly. This legacy API no longer introduces a hidden
+    information variable; geometry, dynamics and sensor biases all match.
     """
     if n_pairs <= 0:
         raise ValueError("n_pairs must be positive")
-    if not getattr(cfg.task, "info_gate_enabled", False):
-        raise ValueError("info_gate_enabled must be True for paired tasks")
     base = sample_tasks(n_pairs, cfg, difficulty, device, gen)
 
     def repeat(v):
@@ -129,10 +121,8 @@ def paired_information_tasks(n_pairs: int, cfg, difficulty: float, device, gen=N
         return v
 
     out = repeat(base)
-    magnitude = base["dyn"]["probe_wind"][:, 1].abs().repeat_interleave(2)
-    sign = torch.tensor([1.0, -1.0], device=device).repeat(n_pairs)
+    out["dyn"]["wind_steady"].zero_()
     out["dyn"]["probe_wind"].zero_()
-    out["dyn"]["probe_wind"][:, 1] = magnitude * sign
     # Keep the exact sample_tasks schema so scatter_tasks() can inject this
     # bank directly into an existing GapEnv. Pair identity is encoded by order.
     return out

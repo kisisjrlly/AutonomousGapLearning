@@ -71,10 +71,9 @@ def fig1_overview(results_dir, out_dir):
     ax.text(1.35, 1.12, "attempt 1 →", fontsize=6.5, color="#e34948")
     ax.text(0.9, 1.72, "abort/retreat", fontsize=6.5, color="#eb6834")
     ax.text(2.4, 1.05, "attempt 2 →", fontsize=6.5, color="#1baf7a")
-    ax.text(0.5, -2.6, "gap: width 0.34–0.90 m, height 0.30–0.80 m, roll ±40°, "
-                       "thickness 0.05–0.30 m", fontsize=6.5, color="#52514e")
-    ax.text(0.5, -2.9, "dynamics: mass 0.60–0.95 kg, TWR 2.2–3.4, latency 0–50 ms, "
-                       "wind 0–2.5 m/s (all hidden from policy)", fontsize=6.5, color="#52514e")
+    ax.text(0.5, -2.6, "current milestone: gap width 0.30 m, height 0.50 m, upright, "
+                       "thickness 0.15 m", fontsize=6.5, color="#52514e")
+    ax.text(0.5, -2.9, "body diameter 0.32 m; no steady wind or gust model", fontsize=6.5, color="#52514e")
     ax.set_xlim(-0.5, 4.6); ax.set_ylim(-3.2, 3.2)
     ax.set_aspect("equal"); ax.axis("off")
     # onboard view filmstrip

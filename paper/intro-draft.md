@@ -17,7 +17,7 @@ ever touching the obstacle.
 This trial-and-retry regime poses a specific learning problem that neither
 classical planning nor standard sim-to-real RL addresses. The information that
 decides feasibility — the true gap size relative to the vehicle, the vehicle's
-own control authority under unknown mass, latency, and wind — is only partially
+own control authority under unknown mass and latency — is only partially
 observable before the first approach and is revealed *by acting*. A policy that
 adapts must therefore carry information across attempts. The obvious mechanism,
 online weight updates, is hazardous on a flying robot: a single mislabeled
@@ -49,7 +49,7 @@ thrust and body rates at 40 Hz. It observes no gap pose, no global position, no
 attempt counter; attempt segmentation exists only in the evaluation
 instrumentation. Training uses recurrent PPO over a procedurally randomized
 distribution of walls with rotated rectangular gaps — including geometrically
-infeasible ones — under randomized dynamics, latency, wind, and appearance, on
+infeasible ones — under randomized dynamics, latency, and appearance, on
 a single consumer GPU via a purpose-built vectorized simulator.
 
 [RESULTS PARAGRAPH — fill with final numbers:

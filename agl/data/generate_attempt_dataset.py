@@ -42,29 +42,34 @@ def _repeat_tree(x,count):
     return x
 
 
-def _set_v0_fixed_geometry(task,cfg):
-    for k,v in dict(gap_w=.52,gap_h=.50,gap_roll=0.,wall_x=3.,thick=.15,gap_cy=0.,gap_cz=1.5).items():
+def _set_fixed_geometry(task,cfg):
+    for k,v in dict(gap_w=cfg.task.narrow_gap_width,gap_h=cfg.task.narrow_gap_height,
+                    gap_roll=0.,wall_x=3.,thick=.15,gap_cy=0.,gap_cz=1.5).items():
         task[k].fill_(v)
     task['feasible'],task['geo_margin']=scene.feasibility(task['gap_w'],task['gap_h'],cfg.sim.body_r,
         cfg.sim.body_hh,cfg.task.feas_margin,cfg.task.feas_roll_max_deg,task['gap_w'].device)
 
 
-def _task(cfg,seed,task_number,device,distribution,disable_gust,c):
+def _set_v0_fixed_geometry(task, cfg):
+    """Compatibility alias for archived V0 callers; uses current 0.30 m gap."""
+    return _set_fixed_geometry(task, cfg)
+
+
+def _task(cfg,seed,task_number,device,distribution,c):
     gen=torch.Generator(device=device).manual_seed(int(seed)+1009+104729*task_number)
     t=scene.sample_tasks(1,cfg,1.,device,gen)
-    _set_v0_fixed_geometry(t,cfg)
+    _set_fixed_geometry(t,cfg)
     d=t['dyn']
     # Motor rating does NOT increase automatically with payload. Otherwise
     # normalized thrust plus TWR-constant randomization cancels mass from motion.
     d['tmax'].fill_(c.nominal_tmax)
     d['wind_steady'].zero_()
-    family=('local_wind','payload','response')[task_number%3] if distribution=='separate' else 'combined'
-    if family in ('local_wind','response'): d['mass'].fill_(c.nominal_mass)
+    d['probe_wind'].zero_();d['gust_sigma'].zero_()
+    family=('nominal','payload','response')[task_number%3] if distribution=='separate' else 'combined'
+    if family in ('nominal','response'): d['mass'].fill_(c.nominal_mass)
     else: d['mass'][:]=c.nominal_mass*(.90+.20*torch.rand(1,device=device,generator=gen))
-    if family not in ('local_wind','combined'): d['probe_wind'].zero_()
     if family not in ('response','combined'):
         d['delay'].zero_();d['tau_rate'].fill_(.05);d['tau_thrust'].fill_(.045)
-    if disable_gust: d['gust_sigma'].zero_()
     return t,family
 
 
@@ -101,6 +106,7 @@ def generate(out,*,num_tasks=16,attempts_per_task=8,batch_tasks=4,seed=0,device=
              fixed_specs=None,rollout_seed=None):
     for v in (num_tasks,attempts_per_task,batch_tasks):
         if isinstance(v,bool) or not isinstance(v,int) or v<1: raise ValueError('positive integer counts required')
+    if not disable_gust: raise ValueError('wind is disabled; gusts cannot be enabled')
     if vary_geometry: raise ValueError('geometry variation requires measured geometry inputs; V1 is fixed-geometry diagnostic')
     if difficulty!=1.: raise ValueError('V1 diagnostic distribution is explicitly difficulty=1')
     if not 0<=probes_per_task<attempts_per_task: raise ValueError('need at least one candidate per task')
@@ -118,7 +124,7 @@ def generate(out,*,num_tasks=16,attempts_per_task=8,batch_tasks=4,seed=0,device=
     options=dict(executor_kwargs or {})
     if set(options)&{'record','return_batch','probe_only','controller'}: raise ValueError('reserved executor options')
     c=ControllerConfig(); ranges=ranges or AttemptRanges()
-    cfg=load_config();cfg.sim.device=device;cfg.curriculum.enabled=False;cfg.task.info_gate_enabled=True
+    cfg=load_config();cfg.sim.device=device;cfg.curriculum.enabled=False
     cfg.sim.ep_len=options.get('max_approach_steps',720)+options.get('max_retreat_steps',600)+2
     rows={k:[] for k in ('task_id','group_id','attempt_index','spec','initial_observation','evidence',
                         'evidence_mask','context_eligible','target','target_mask','status','steps','role')}
@@ -128,7 +134,7 @@ def generate(out,*,num_tasks=16,attempts_per_task=8,batch_tasks=4,seed=0,device=
         cfg.sim.n_envs=count*attempts_per_task
         tasks=[];group_ids=[];specs=[]
         for tid in range(start,start+count):
-            task,family=_task(cfg,seed,tid,device,distribution,disable_gust,c)
+            task,family=_task(cfg,seed,tid,device,distribution,c)
             payload=json.dumps(_tree_plain(task),sort_keys=True,separators=(',',':'),allow_nan=False)
             group_ids.append(hashlib.sha256(payload.encode()).hexdigest())
             audit_tasks.append(payload);audit_ids.append(tid);families.append(family)
@@ -167,7 +173,8 @@ def generate(out,*,num_tasks=16,attempts_per_task=8,batch_tasks=4,seed=0,device=
           'fixed_specs':None if fixed_specs is None else [s.as_vector().tolist() for s in fixed_specs],
           'seed':seed,'num_tasks':num_tasks,'attempts_per_task':attempts_per_task,'batch_tasks':batch_tasks,
           'probes_per_task':probes_per_task,'geometry_varied':False,'distribution':distribution,
-          'gust_disabled':disable_gust,'controller_version':CONTROLLER_VERSION,'controller':asdict(c),
+          'wind_model':'disabled','gust_disabled':True,
+          'task_mode':'no_wind_narrow_gap_v1','controller_version':CONTROLLER_VERSION,'controller':asdict(c),
           'ranges':asdict(ranges),'executor_options':options,'sim_config':cfg.to_dict(),
           'sampling_mode':'independent_fixture_trials_NOT_continuous_retries',
           'evidence_rule':'o_pre[:17],requested_command,o_post[:17],dt,time; no query labels or terminal reset obs',
@@ -190,13 +197,13 @@ def main():
     p.add_argument('--out',required=True);p.add_argument('--tasks',type=int,default=16)
     p.add_argument('--attempts-per-task',type=int,default=8);p.add_argument('--batch-tasks',type=int,default=4)
     p.add_argument('--probes-per-task',type=int,default=2);p.add_argument('--seed',type=int,default=0)
-    p.add_argument('--device',default='cpu');p.add_argument('--keep-gust',action='store_true')
+    p.add_argument('--device',default='cpu')
     p.add_argument('--distribution',choices=['separate','combined'],default='separate')
     p.add_argument('--trace-dir');p.add_argument('--vary-geometry',action='store_true')
     a=p.parse_args()
     print(json.dumps(generate(a.out,num_tasks=a.tasks,attempts_per_task=a.attempts_per_task,
        batch_tasks=a.batch_tasks,probes_per_task=a.probes_per_task,seed=a.seed,device=a.device,
-       disable_gust=not a.keep_gust,distribution=a.distribution,trace_dir=a.trace_dir,
+       distribution=a.distribution,trace_dir=a.trace_dir,
        vary_geometry=a.vary_geometry),indent=2,allow_nan=False))
 
 if __name__=='__main__': main()

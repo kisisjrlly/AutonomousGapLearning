@@ -241,7 +241,7 @@ def check_common_bank(datasets: Sequence[AttemptDataset]):
         if not np.array_equal(groups, np.unique(ds.group_id)):
             raise ValueError("repetitions must contain the same physical settings")
         for k in ("fixed_specs", "controller_version", "controller", "executor_options",
-                  "distribution", "sampling_mode", "batch_tasks", "gust_disabled",
+                  "distribution", "sampling_mode", "batch_tasks", "gust_disabled", "wind_model", "task_mode",
                   "probes_per_task", "source_sha256"):
             if ds.meta.get(k) != first.meta.get(k):
                 raise ValueError(f"mixed execution protocol: {k}")

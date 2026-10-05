@@ -202,22 +202,10 @@ def log_episode(ep: EvalEpisode, out: str | Path | None = None, spawn: bool = Fa
             ),
         )
 
-        activation = ep.probe_activation(i)
-        probe_wind = np.asarray(ep.task.get("probe_wind", np.zeros(3)), dtype=float)
-        if activation > 0 and np.linalg.norm(probe_wind) > 0:
-            rr.log(
-                "world/vectors/probe_wind",
-                rr.LineStrips3D(
-                    [np.stack([p, p + .30*activation*probe_wind])],
-                    colors=[[235,180,40]],
-                    radii=[.018],
-                ),
-            )
-        else:
-            # Rerun keeps the last value of an entity on a timeline. Explicitly
-            # clear the privileged vector when the vehicle retreats out of the
-            # information gate so a stale arrow cannot look like a current force.
-            rr.log("world/vectors/probe_wind", rr.Clear(recursive=False))
+        # Wind visualization was retired with the information-gate experiment.
+        # Clear this legacy entity so old recordings cannot leave a stale arrow.
+        rr.log("world/vectors/probe_wind", rr.Clear(recursive=False))
+        activation = 0.0
 
         speed = float(np.linalg.norm(v))
         rr.log("telemetry/speed_mps", rr.Scalars(speed))

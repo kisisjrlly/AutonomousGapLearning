@@ -1,7 +1,7 @@
 """Auditable independent simulation trials; NOT autonomous retry or a safety shield.
 
 The controller uses ground-truth pose and known fixture geometry (declared V0
-privilege), but fixed nominal thrust calibration, never hidden mass/tmax/wind.
+privilege), but fixed nominal thrust calibration, never hidden mass/tmax.
 Only simulated onboard observations and requested commands enter evidence.
 Terminal labels use pre-reset transition state. Every finished row is masked.
 """
@@ -117,7 +117,6 @@ def execute_attempt_batch(env, specs, *, abort_clearance=.04, settle_steps=12,
     xi=torch.tensor(np.stack([s.as_vector() for s in specs]),device=dev)
     home=_initialize(env,xi,c)
     refs={k:env.task[k].clone() for k in ('wall_x','gap_cy','gap_cz','thick','gap_w','gap_h','gap_roll')}
-    probe_wind_ref=env.task['dyn'].get('probe_wind',torch.zeros(n,3,device=dev)).clone()
     probe=torch.zeros(n,dtype=torch.bool,device=dev) if probe_only is None else torch.as_tensor(probe_only,device=dev,dtype=torch.bool)
     if probe.shape!=(n,): raise ValueError("probe_only shape mismatch")
     obs=env.observe(); initial=obs['vec'][:,:OBS_DIM].cpu().numpy().copy()
@@ -247,11 +246,11 @@ def execute_attempt_batch(env, specs, *, abort_clearance=.04, settle_steps=12,
     if trace is not None:
         trace={k:np.stack(v) if v else np.empty((0,n)) for k,v in trace.items()}
         trace['steps']=steps.cpu().numpy();trace['task']={k:v.cpu().numpy() for k,v in refs.items()}
-        trace['task']['probe_wind']=probe_wind_ref.cpu().numpy()
+        trace['task']['probe_wind']=np.zeros((n,3),dtype=np.float32)  # legacy slot
         trace['dt_ctrl']=cfg.sim.dt_ctrl
         trace['meta']={'dt_ctrl':cfg.sim.dt_ctrl,'body_r':cfg.sim.body_r,'body_hh':cfg.sim.body_hh,
                        'retry_x':cfg.sim.retry_x,'succ_margin':cfg.sim.succ_margin,
-                       'info_gate_enabled':cfg.task.info_gate_enabled,
+                       'wind_model':'disabled','info_gate_enabled':False,
                        'info_probe_distance':cfg.task.info_probe_distance,'info_probe_ramp':cfg.task.info_probe_ramp,
                        'scope':'independent_simulation_trials_NOT_learned_NOT_safety_guarantee',
                        'timing':'pre-action state; p_post/v_post before reset; commands are not motor forces'}

@@ -21,7 +21,7 @@ def make_state(n: int, device) -> dict:
                         torch.zeros(n, 3, device=device)], dim=-1),
         "w": torch.zeros(n, 3, device=device),          # body rates
         "thrust": torch.zeros(n, device=device),        # actual thrust (N)
-        "wind": torch.zeros(n, 3, device=device),       # OU gust component
+        "wind": torch.zeros(n, 3, device=device),       # inert legacy schema slot
         "spec_force": torch.zeros(n, 3, device=device), # body-frame accelerometer
     }
 
@@ -45,6 +45,8 @@ def step(state: dict, t_cmd: torch.Tensor, w_cmd: torch.Tensor, dyn: dict,
     or grazed between control-rate samples.
     """
     dtp = dt / substeps
+    # Clear legacy snapshots before substep callbacks can inspect the state.
+    state["wind"].zero_()
     g_vec = torch.tensor([0.0, 0.0, -G], device=t_cmd.device)
     m = dyn["mass"]
     for _ in range(substeps):
@@ -58,7 +60,10 @@ def step(state: dict, t_cmd: torch.Tensor, w_cmd: torch.Tensor, dyn: dict,
         state["q"] = quat_integrate(state["q"], state["w"], dtp)
         # translational
         f_world = body_z_world(state["q"]) * state["thrust"].unsqueeze(-1)
-        v_air = state["v"] - (dyn["wind_steady"] + state["wind"])
+        # Wind is intentionally disabled for the current narrow-gap milestone.
+        # Keep state["wind"] in the schema for old snapshots, but never feed it
+        # into translational dynamics.
+        v_air = state["v"]
         drag = dyn["kd_lin"].unsqueeze(-1) * v_air \
             + dyn["kd_quad"].unsqueeze(-1) * v_air.norm(dim=-1, keepdim=True) * v_air
         acc = g_vec + f_world / m.unsqueeze(-1) - drag
@@ -68,12 +73,6 @@ def step(state: dict, t_cmd: torch.Tensor, w_cmd: torch.Tensor, dyn: dict,
             substep_cb(state)
     # accelerometer specific force (world acc minus gravity, in body frame)
     state["spec_force"] = quat_rotate_inv(state["q"], acc - g_vec)
-    # OU gust process at control rate
-    n = t_cmd.shape[0]
-    noise = torch.randn(n, 3, device=t_cmd.device, generator=gen)
-    tau_w = dyn["wind_tau"]
-    sig = dyn["gust_sigma"].unsqueeze(-1) * torch.tensor([1.0, 1.0, 0.3], device=t_cmd.device)
-    state["wind"] += dt * (-state["wind"] / tau_w) + (dt ** 0.5) * sig * noise
     return state
 
 

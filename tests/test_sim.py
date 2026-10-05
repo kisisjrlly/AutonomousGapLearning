@@ -126,6 +126,16 @@ def test_feasibility_label():
     assert margin[0] > margin[2] > 0
 
 
+def test_default_task_is_narrow_and_windless():
+    cfg = make_cfg(8)
+    task = scene.sample_tasks(8, cfg, 1.0, DEV)
+    assert torch.all(task["gap_w"] < 2 * cfg.sim.body_r)
+    assert torch.count_nonzero(task["dyn"]["wind_steady"]) == 0
+    assert torch.count_nonzero(task["dyn"]["probe_wind"]) == 0
+    assert torch.count_nonzero(task["dyn"]["gust_sigma"]) == 0
+    assert task["dyn"]["wind_tau"] == 0.0
+
+
 # -------------------------------------------------------------------- render
 def test_render_gap_visible():
     cfg = make_cfg(1)
@@ -187,7 +197,7 @@ def _default_vis(n):
     }
 
 
-def test_paired_information_tasks_match_except_latent_sign():
+def test_paired_information_tasks_are_identical_no_wind_pairs():
     cfg = make_cfg(4)
     cfg.task.info_gate_enabled = True
     gen = torch.Generator(device=DEV)
@@ -199,5 +209,5 @@ def test_paired_information_tasks_match_except_latent_sign():
             assert torch.equal(task[key][a], task[key][b])
         assert torch.equal(task["dyn"]["wind_steady"][a], task["dyn"]["wind_steady"][b])
         assert torch.equal(task["vis"]["wall_alb"][a], task["vis"]["wall_alb"][b])
-        assert torch.allclose(task["dyn"]["probe_wind"][a],
-                              -task["dyn"]["probe_wind"][b])
+        assert torch.equal(task["dyn"]["probe_wind"][a], task["dyn"]["probe_wind"][b])
+        assert task["dyn"]["probe_wind"][a].abs().max() == 0

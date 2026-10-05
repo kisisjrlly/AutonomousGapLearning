@@ -86,8 +86,8 @@ def _sync_controlled_initial_state(env, home):
     st, cfg = env.state, env.cfg
     env.prev_x.copy_(st["p"][:, 0])
     env.prev_dist.copy_((st["p"] - env._target()).norm(dim=-1))
-    # Runtime OU biases are environment state, not sampled task fields. Match
-    # them within each latent pair so the pair differs only by hidden wind.
+    # Runtime biases are environment state. Match them within each pair for a
+    # deterministic no-wind recovery comparison.
     env.v_bias[1::2].copy_(env.v_bias[0::2])
     env.z_bias[1::2].copy_(env.z_bias[0::2])
     fresh = render.render(st["p"], st["q"], env.task, env.rays, cfg.sensor)
@@ -137,7 +137,7 @@ def run(
     cfg.sim.device = "cpu"
     cfg.sim.n_envs = 2 * n_pairs
     cfg.sim.ep_len = 3 * phase_limit + 64
-    cfg.task.info_gate_enabled = True
+    cfg.task.info_gate_enabled = False
     cfg.curriculum.enabled = False
 
     env = GapEnv(cfg, "cpu", difficulty=1.0)
@@ -145,7 +145,7 @@ def run(
         torch.arange(env.n),
         tasks=scene.paired_information_tasks(n_pairs, cfg, 1.0, "cpu"),
     )
-    # First validate the controlled recovery mechanism without unrelated gusts.
+    # Validate controlled recovery in the current no-wind milestone.
     env.task["dyn"]["wind_steady"].zero_()
     env.task["dyn"]["gust_sigma"].zero_()
     env.state["wind"].zero_()
@@ -192,7 +192,7 @@ def run(
         f"task_{k}": v.numpy().copy()
         for k, v in env.task.items() if torch.is_tensor(v)
     }
-    task_data["task_probe_wind"] = env.task["dyn"]["probe_wind"].numpy().copy()
+    task_data["task_probe_wind"] = np.zeros((env.n, 3), dtype=np.float32)  # legacy slot
 
     reason = None
     minimum = float("inf")

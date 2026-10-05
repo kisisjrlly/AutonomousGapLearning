@@ -25,27 +25,32 @@ class SimCfg:
 @dataclass
 class TaskCfg:
     # gap geometry ranges (difficulty lambda in [0,1] interpolates *_easy -> value)
-    width_lo: float = 0.34
-    width_lo_easy: float = 0.80
-    width_hi: float = 0.90
-    width_hi_easy: float = 1.40
-    height_lo: float = 0.30
-    height_lo_easy: float = 0.60
-    height_hi: float = 0.80
-    height_hi_easy: float = 1.00
-    gap_cz_spread_easy: float = 0.25  # easy: gap centers near start altitude
-    thick_lo: float = 0.05
-    thick_hi: float = 0.30
-    roll_max_deg: float = 40.0      # in-plane gap roll; scaled by difficulty
-    roll_max_deg_easy: float = 10.0
-    wall_x_lo: float = 2.5
-    wall_x_hi: float = 4.5
+    # Current milestone: fixed narrow aperture. The nominal body diameter is
+    # 2*SimCfg.body_r = 0.32 m, so the 0.30 m opening requires attitude control.
+    narrow_gap_only: bool = True
+    narrow_gap_width: float = 0.30
+    narrow_gap_height: float = 0.50
+    width_lo: float = 0.30
+    width_lo_easy: float = 0.30
+    width_hi: float = 0.30
+    width_hi_easy: float = 0.30
+    height_lo: float = 0.50
+    height_lo_easy: float = 0.50
+    height_hi: float = 0.50
+    height_hi_easy: float = 0.50
+    gap_cz_spread_easy: float = 0.0
+    thick_lo: float = 0.15
+    thick_hi: float = 0.15
+    roll_max_deg: float = 0.0       # single upright aperture for this milestone
+    roll_max_deg_easy: float = 0.0
+    wall_x_lo: float = 3.0
+    wall_x_hi: float = 3.0
     wall_x_hi_easy: float = 3.0
-    gap_cy: float = 0.8             # |gap center y| <= this
-    gap_cz_lo: float = 1.0
-    gap_cz_hi: float = 2.2
+    gap_cy: float = 0.0
+    gap_cz_lo: float = 1.5
+    gap_cz_hi: float = 1.5
     # infeasible instances (README: policy must learn to give up)
-    infeasible_frac: float = 0.08   # scaled by difficulty
+    infeasible_frac: float = 0.0    # narrow-gap milestone uses one traversable gap
     infeasible_w_lo: float = 0.20
     infeasible_w_hi: float = 0.30
     feas_margin: float = 0.03       # per-side clearance margin for feasibility label
@@ -66,14 +71,16 @@ class TaskCfg:
     kd_lin_hi: float = 0.25
     kd_quad_lo: float = 0.005
     kd_quad_hi: float = 0.02
-    wind_max: float = 2.5           # m/s steady, scaled by difficulty
-    wind_gust_sigma: float = 0.8
-    wind_tau: float = 2.0
-    # GapEnv-v2 information gate (default off for checkpoint compatibility).
+    # Retained as zero-valued compatibility fields for old configs/checkpoints.
+    # Wind is disabled in the simulator and cannot affect current experiments.
+    wind_max: float = 0.0
+    wind_gust_sigma: float = 0.0
+    wind_tau: float = 0.0
+    # Deprecated information-gate fields: accepted on load, physically inert.
     info_gate_enabled: bool = False
     info_probe_distance: float = 1.0
     info_probe_ramp: float = 0.25
-    info_probe_wind: float = 1.2
+    info_probe_wind: float = 0.0
 
 
 @dataclass

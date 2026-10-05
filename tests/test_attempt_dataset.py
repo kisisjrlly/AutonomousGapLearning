@@ -92,7 +92,7 @@ def test_generator_deterministic_and_fixed_geometry(tmp_path):
     assert 'source_sha256' in a.meta and len(a.meta['source_sha256'])>3
     assert len(a.candidate_indices)==6
     tasks=[json.loads(t) for t in a.audit['audit_task_json']]
-    assert all(t['gap_w']==pytest.approx([.52]) for t in tasks)
+    assert all(t['gap_w']==pytest.approx([.30]) for t in tasks)
     assert all(t['dyn']['tmax']==pytest.approx([.775*9.81*2.8]) for t in tasks)
     with pytest.raises(ValueError,match='geometry'):
         generate(tmp_path/'wrong.npz',vary_geometry=True)

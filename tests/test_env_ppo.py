@@ -179,8 +179,8 @@ def test_substep_collision_no_tunneling():
     assert info["collision_high"].all()  # 14 m/s is far above soft threshold
 
 
-def test_information_gate_local_wind_is_latent_until_probe_zone():
-    """Matched hidden disturbances are absent far away and appear only near wall."""
+def test_legacy_wind_fields_are_inert():
+    """Old nonzero wind fields cannot affect the current no-wind milestone."""
     cfg = small_cfg(2)
     cfg.task.info_gate_enabled = True
     cfg.task.info_probe_distance = 1.0
@@ -197,5 +197,4 @@ def test_information_gate_local_wind_is_latent_until_probe_zone():
 
     env.state["p"][:, 0] = 2.3
     near = env._effective_wind_steady()
-    assert torch.allclose(near[:, 1], torch.tensor([1.0, -1.0], device=DEV))
-    assert torch.allclose(near[:, (0, 2)], torch.zeros(2, 2, device=DEV))
+    assert torch.allclose(near, torch.zeros_like(near))

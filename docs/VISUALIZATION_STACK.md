@@ -58,7 +58,7 @@ world/
   drone/body            无人机桨叶保护圆盘近似
   drone/axes            机体系 x/y/z，直接显示姿态
   vectors/velocity      当前速度向量
-  vectors/probe_wind    DEBUG 特权显示：当前 information gate 隐藏局部风
+  vectors/probe_wind    已停用；当前实验恒为零
 
 sensors/
   ego_rgb               策略真正收到的 RGB（仅 --save-frames 保存的 task）
@@ -82,8 +82,7 @@ events/
   state                 phase 切换与 attempt/event 日志
 \`\`\`
 
-注意：\`probe_wind\` 是 **debug-only privileged visualization**。它不是 actor 观测，不能在算法结果展示中让人误以为
-策略直接获得了风向真值。
+旧 `probe_wind` 仅为读取历史文件保留，当前结果不显示风影响。
 
 ## 保存可重复回放的 .rrd
 

@@ -1,11 +1,9 @@
-"""Verify that hidden task evidence reaches actor-visible sensors.
+"""Verify matched no-wind tasks remain sensor-identical near the gap.
 
 This is a structural observability check, not a learned classifier and not a
 noise-robust deployment claim. Observation noise/pixel noise are disabled so
 matched latent task pairs must be exactly identical outside the information
-zone. Inside the zone, the only task difference (probe-wind sign) acts through
-the 6-DoF dynamics and must create a measurable difference in the actor's
-18-D observation vector.
+zone. The retired hidden-wind factor no longer creates an observation split.
 """
 import argparse
 import json
@@ -38,7 +36,7 @@ def run(n_pairs=8, steps=20, seed=20260922):
     cfg.sim.n_envs = 2 * n_pairs
     cfg.sim.device = "cpu"
     cfg.curriculum.enabled = False
-    cfg.task.info_gate_enabled = True
+    cfg.task.info_gate_enabled = False
     # Structural check first: remove observation/render noise, keep paired
     # task sensor biases and the real dynamics path.
     cfg.sensor.gyro_noise = 0.0
@@ -73,7 +71,7 @@ def run(n_pairs=8, steps=20, seed=20260922):
     far_vec_delta = _pair_max_delta(far["vec"])
     far_img_delta = _pair_max_delta(far["img"])
 
-    # Move both pair members to the same fully active information-zone state.
+    # Move both pair members to the same near-gap state.
     st["p"][:, 0] = (
         env.task["wall_x"] - cfg.task.info_probe_distance
         + cfg.task.info_probe_ramp + .05
@@ -103,7 +101,8 @@ def run(n_pairs=8, steps=20, seed=20260922):
     )
 
     return {
-        "scope": "actor_sensor_structural_observability_NOT_noise_robust_learning_evidence",
+        "scope": "matched_no_wind_sensor_check_NOT_adaptation_evidence",
+        "wind_model": "disabled",
         "n_pairs": n_pairs,
         "steps": steps,
         "far_obs_vec_pair_max_abs_delta": far_vec_delta,
