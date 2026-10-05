@@ -7,15 +7,16 @@ Terminal labels use pre-reset transition state. Every finished row is masked.
 """
 from __future__ import annotations
 from dataclasses import dataclass, asdict
+import math
 import numpy as np
 import torch
 from .outcome import AttemptOutcome
 from .spec import AttemptSpec
 from .reference import path_reference, speed_reference
 from ..sim import dynamics, collision, render
-from ..sim.maths import body_z_world, quat_rotate_inv
+from ..sim.maths import body_z_world, quat_rotate_inv, quat_mul, quat_from_yaw
 
-CONTROLLER_VERSION = "nominal_feedback_hermite_v1"
+CONTROLLER_VERSION = "nominal_feedback_hermite_roll_v1"
 OBS_DIM = 17  # exclude simulator-only thrust/tmax channel at index 17
 EVIDENCE_DIM = 2*OBS_DIM + 4 + 2  # o_pre, requested action, o_post, dt, elapsed time
 
@@ -36,26 +37,130 @@ class ControllerConfig:
     accel_limit: float = 2.0
     switch_distance: float = .8
     probe_distance: float = .65
+    # The fixed 0.30 m milestone is narrower than the 0.32 m body diameter.
+    # Roll is therefore an explicit controller decision, rather than an
+    # accidental consequence of lateral acceleration. These are controller
+    # parameters, not learned policy outputs.
+    roll_target_rad: float = math.radians(55.0)
+    roll_start_distance: float = 1.60
+    roll_hold_distance: float = .25
+    roll_prebias_rad: float = 0.0
+    roll_prebias_distance: float = .35
+    roll_release_distance: float = .45
+    roll_kp: float = 4.5
+    roll_kd: float = .35
+    suppress_lateral_accel_when_rolled: bool = True
 
     def __post_init__(self):
-        if any(not np.isfinite(x) or x <= 0 for x in asdict(self).values()):
-            raise ValueError("controller constants must be positive and finite")
+        for name, value in asdict(self).items():
+            if not np.isfinite(value):
+                raise ValueError(f"controller constant {name} must be finite")
+        if self.nominal_mass <= 0 or self.nominal_tmax <= 0 or self.accel_limit <= 0:
+            raise ValueError("nominal mass/thrust and acceleration limit must be positive")
+        if self.switch_distance <= 0 or self.probe_distance <= 0:
+            raise ValueError("switch/probe distances must be positive")
+        if not 0 < abs(self.roll_target_rad) < math.pi / 2:
+            raise ValueError("roll target must be between 0 and 90 degrees")
+        if min(self.roll_start_distance, self.roll_hold_distance,
+               self.roll_prebias_distance,
+               self.roll_release_distance, self.roll_kp, self.roll_kd) <= 0:
+            raise ValueError("roll schedule and gains must be positive")
+        if abs(self.roll_prebias_rad) >= math.pi / 2:
+            raise ValueError("roll prebias must be smaller than 90 degrees")
+        if self.roll_start_distance <= self.roll_hold_distance + self.roll_prebias_distance:
+            raise ValueError("roll schedule leaves no transition interval")
 
 
-def _action_from_accel(env, accel, heading, c):
+def _roll_from_quat(q):
+    """Return body x-axis roll in radians for the (w,x,y,z) convention."""
+    w, x, y, z = q.unbind(-1)
+    return torch.atan2(2.0 * (w * x + y * z), 1.0 - 2.0 * (x * x + y * y))
+
+
+def _smoothstep01(x):
+    x = x.clamp(0.0, 1.0)
+    return x * x * (3.0 - 2.0 * x)
+
+
+def _roll_schedule(x, wall_x, thick, c):
+    """Smoothly acquire roll before the wall and release after the aperture."""
+    acquire_start = wall_x - c.roll_start_distance
+    transition_end = wall_x - c.roll_hold_distance
+    transition_width = max(c.roll_start_distance - c.roll_hold_distance -
+                           c.roll_prebias_distance, 1e-3)
+    transition_start = transition_end - transition_width
+    exit_start = wall_x + thick
+    release_end = exit_start + c.roll_release_distance
+    pre = c.roll_prebias_rad * _smoothstep01(
+        (x - acquire_start) / max(c.roll_prebias_distance, 1e-3))
+    up = _smoothstep01((x - transition_start) / transition_width)
+    rising = c.roll_prebias_rad + (c.roll_target_rad - c.roll_prebias_rad) * up
+    rising = torch.where(x < transition_start, pre, rising)
+    rising = torch.where(x >= transition_end,
+                         torch.full_like(x, c.roll_target_rad), rising)
+    rising = torch.where(x < acquire_start, torch.zeros_like(x), rising)
+    down = _smoothstep01((release_end - x) / c.roll_release_distance)
+    return rising * down
+
+
+def _gap_entry_ready(env, roll, c):
+    """Geometry-aware crossing gate for the fixed narrow-gap controller.
+
+    The ordinary abort margin is appropriate in open space, but it would
+    abort every valid narrow-gap trajectory as the body approaches the front
+    wall. Once the measured pose is rolled enough and the sampled body
+    rectangle has positive aperture margin, collision checking remains the
+    terminal authority while the vehicle crosses the wall slab.
+    """
+    cfg, st, task = env.cfg, env.state, env.task
+    angle = roll.abs().clamp(0.0, math.pi / 2 - 1e-4)
+    req_w = 2.0 * cfg.sim.body_r * angle.cos() + 2.0 * cfg.sim.body_hh * angle.sin()
+    req_h = 2.0 * cfg.sim.body_r * angle.sin() + 2.0 * cfg.sim.body_hh * angle.cos()
+    margin = .005
+    y_margin = .5 * task['gap_w'] - .5 * req_w - margin
+    z_margin = .5 * task['gap_h'] - .5 * req_h - margin
+    return ((st['p'][:, 0] >= task['wall_x'] - cfg.sim.body_r)
+            & (roll.abs() >= math.radians(45.0))
+            & (y_margin > 0) & (z_margin > 0)
+            & ((st['p'][:, 1] - task['gap_cy']).abs() <= y_margin)
+            & ((st['p'][:, 2] - task['gap_cz']).abs() <= z_margin))
+
+
+def _action_from_accel(env, accel, heading, c, target_roll=None):
     # Pose feedback is privileged in V0; dynamics calibration is not task-specific.
     st = env.state
     force = accel.clamp(-c.accel_limit, c.accel_limit).clone()
     force[:, 2] += dynamics.G
     desired_z = force / force.norm(dim=-1, keepdim=True).clamp_min(1e-6)
-    axis = torch.cross(body_z_world(st['q']), desired_z, dim=-1)
-    rates = 5.0 * quat_rotate_inv(st['q'], axis) - .3*st['w']
+    if target_roll is None:
+        axis = torch.cross(body_z_world(st['q']), desired_z, dim=-1)
+        rates = 5.0 * quat_rotate_inv(st['q'], axis) - .3*st['w']
+    else:
+        # Build a full attitude target whose thrust axis follows the desired
+        # acceleration and whose roll about the forward world axis follows the
+        # aperture schedule. A body-z-only correction cannot preserve roll:
+        # lateral acceleration would continuously cancel it.
+        theta = torch.atan2(force[:, 0], torch.sqrt(force[:, 1].square() +
+                                                     force[:, 2].square()))
+        half_r, half_p = .5 * target_roll, .5 * theta
+        q_roll = torch.stack([half_r.cos(), half_r.sin(),
+                              torch.zeros_like(half_r), torch.zeros_like(half_r)], -1)
+        q_pitch = torch.stack([half_p.cos(), torch.zeros_like(half_p),
+                               half_p.sin(), torch.zeros_like(half_p)], -1)
+        q_des = quat_mul(quat_mul(quat_from_yaw(heading), q_roll), q_pitch)
+        q_inv = st['q'].clone(); q_inv[:, 1:] *= -1
+        q_err = quat_mul(q_des, q_inv)
+        flip = q_err[:, 0] < 0
+        q_err = torch.where(flip[:, None], -q_err, q_err)
+        err_body = quat_rotate_inv(st['q'], 2.0 * q_err[:, 1:])
+        rates = c.roll_kp * err_body - c.roll_kd * st['w']
     w, x, y, z = st['q'].unbind(-1)
     yaw = torch.atan2(2*(w*z+x*y), 1-2*(y*y+z*z))
     error = torch.atan2(torch.sin(heading-yaw), torch.cos(heading-yaw))
     rates[:, 2] += 2.0*error
     action = torch.zeros(env.n, 4, device=env.dev)
-    action[:, 0] = 2*force.norm(dim=-1)*c.nominal_mass/c.nominal_tmax - 1
+    thrust_force = force.norm(dim=-1)
+    action[:, 0] = 2*thrust_force*c.nominal_mass/c.nominal_tmax - 1
     action[:, 1:] = rates / dynamics.OMEGA_MAX.to(env.dev)
     return action.clamp(-1, 1)
 
@@ -155,7 +260,9 @@ def execute_attempt_batch(env, specs, *, abort_clearance=.04, settle_steps=12,
         minimum[active]=torch.minimum(minimum[active],clear[active])
         approach=phase==0
         forced=probe & (st['p'][:,0]>=refs['wall_x']-c.probe_distance)
-        switch=approach & ((clear<=abort_clearance)|forced|(phase_count>=max_approach_steps))
+        entry_ready = _gap_entry_ready(env, _roll_from_quat(st['q']), c)
+        clear_gate = (clear <= abort_clearance) & ~entry_ready
+        switch=approach & (clear_gate|forced|(phase_count>=max_approach_steps))
         for i in switch.nonzero().flatten().tolist():
             reasons[i]='probe_end' if bool(forced[i]) else ('clearance' if float(clear[i])<=abort_clearance else 'approach_budget')
         aborted[switch]=True; abortx[switch]=st['p'][switch,0]
@@ -172,6 +279,10 @@ def execute_attempt_batch(env, specs, *, abort_clearance=.04, settle_steps=12,
         a[:,1:]=2.2*(yz-st['p'][:,1:])+2.6*(vcmd[:,None]*dydx-st['v'][:,1:])
         integral[:,2]=(integral[:,2]+cfg.sim.dt_ctrl*(yz[:,1]-st['p'][:,2])).clamp(-1,1)
         a[:,2]+=.8*integral[:,2]
+        # Keep the crossing height explicit while the body is rolled. The
+        # original path integral is deliberately gentle and lets a small
+        # pitch/roll transient become a false wall contact.
+        a[:,2] += 4.0 * (refs['gap_cz'] - st['p'][:, 2]) - 2.0 * st['v'][:, 2]
         recovery=phase==1
         integral[recovery]=(integral[recovery]+cfg.sim.dt_ctrl*(home[recovery]-st['p'][recovery])).clamp(-1,1)
         # Do not integrate long-distance x errors into a saturated retreat.
@@ -179,7 +290,23 @@ def execute_attempt_batch(env, specs, *, abort_clearance=.04, settle_steps=12,
         back=(2.2*(home-st['p'])-2.8*st['v']+.8*integral)
         a[recovery]=back[recovery]
         heading=torch.atan(dydx[:,0]);heading[recovery]=0
-        action=_action_from_accel(env,a,heading,c)
+        target_roll = _roll_schedule(st['p'][:, 0], refs['wall_x'], refs['thick'], c)
+        if c.suppress_lateral_accel_when_rolled:
+            # A rigid body held edge-on necessarily produces lateral thrust.
+            # Make that acceleration an explicit feed-forward term so the
+            # attitude loop does not fight its own roll target. The candidate
+            # start offset then supplies the planned lateral trajectory.
+            rolled = target_roll.abs() > math.radians(2.0)
+            a[:, 1] = torch.where(rolled,
+                                  -dynamics.G * torch.tan(target_roll), a[:, 1])
+            # Coast through the aperture instead of demanding forward pitch
+            # while the body is edge-on. This lets the roll-only cross-section
+            # be evaluated at the wall; forward speed was already acquired in
+            # the approach phase.
+            near_gap = st['p'][:, 0] >= refs['wall_x'] - .35
+            a[:, 0] = torch.where(rolled & near_gap,
+                                  torch.zeros_like(a[:, 0]), a[:, 0])
+        action=_action_from_accel(env,a,heading,c,target_roll)
         action[~active]=0
         before={k:st[k].clone() for k in ('p','v','q')}
         preobs=obs['vec'][:,:OBS_DIM].clone()
@@ -252,6 +379,7 @@ def execute_attempt_batch(env, specs, *, abort_clearance=.04, settle_steps=12,
                        'retry_x':cfg.sim.retry_x,'succ_margin':cfg.sim.succ_margin,
                        'wind_model':'disabled','info_gate_enabled':False,
                        'info_probe_distance':cfg.task.info_probe_distance,'info_probe_ramp':cfg.task.info_probe_ramp,
+                       'controller_version':CONTROLLER_VERSION,'controller':asdict(c),
                        'scope':'independent_simulation_trials_NOT_learned_NOT_safety_guarantee',
                        'timing':'pre-action state; p_post/v_post before reset; commands are not motor forces'}
     result=AttemptBatch(outcomes,initial,evidence,evidence_mask,trace)

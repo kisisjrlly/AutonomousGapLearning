@@ -85,6 +85,20 @@ python3 -m agl.eval.animate_eval_3d \
 
 GIF 仍是实际 GapEnv 积分轨迹，但信息密度低于 Rerun。
 
+## 2026-10-05 无风窄缝姿态基线
+
+这是当前固定 0.30 m 窄缝的真实 GapEnv 低层控制诊断，不是学习策略演示：
+
+```bash
+OUT=/tmp/agl-narrow-controller-$(date +%s%N)
+python3 -m agl.eval.verify_narrow_gap_controller --out "$OUT" \
+  --start-y 0.4 --entry-speed 2.0 --roll-target-deg 65 --device cpu
+python3 -m agl.eval.animate_eval_3d --input "$OUT/trajectory.npz" \
+  --task 0 --out "$OUT/flight.gif"
+```
+
+动画显示姿态取得、窄缝前的实际轨迹、有限采样净空和接触标记。若结果是 `contact` 或 `environment_terminal`，它应被看作低层基线失败证据；不能解释成无人机已经学会尝试或重试。完整边界见 `docs/LOW_LEVEL_NARROW_GAP_CONTROLLER.md`。
+
 ## 结构性信息检查
 
 ```bash
